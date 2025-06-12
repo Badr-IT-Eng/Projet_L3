@@ -1,0 +1,23 @@
+<svg width="140" height="40" viewBox="0 0 140 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logo-gradient-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="logo-gradient-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+  <style>
+    .logo-fill { fill: url(#logo-gradient-light); }
+    .text-fill { fill: #0f172a; }
+    @media (prefers-color-scheme: dark) {
+      .logo-fill { fill: url(#logo-gradient-dark); }
+      .text-fill { fill: #e2e8f0; }
+    }
+  </style>
+  <rect x="0" y="8" width="24" height="24" rx="8" class="logo-fill" />
+  <path d="M5 20L9 24L19 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="34" y="28" font-family="Arial" font-size="20" font-weight="bold" class="text-fill">RECOVR</text>
+</svg>
