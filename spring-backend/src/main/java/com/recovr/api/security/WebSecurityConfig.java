@@ -71,8 +71,10 @@ public class WebSecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 
                 // Public read access to items
+                .requestMatchers(HttpMethod.GET, "/api/items/public").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/items/public/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/items/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/items/{id}").permitAll()
                 
                 // File access - allow public read for images
                 .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
