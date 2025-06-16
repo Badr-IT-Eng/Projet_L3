@@ -31,7 +31,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Tag(name = "Search", description = "Search API for lost items")
 @SecurityRequirement(name = "bearerAuth")
 public class SearchController {
@@ -210,4 +209,4 @@ public class SearchController {
             ));
         }
     }
-} 
+}

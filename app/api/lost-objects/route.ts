@@ -4,7 +4,7 @@ import LostObject from "@/lib/models/LostObject"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082/api';
 
 // GET /api/lost-objects
 export async function GET(request: NextRequest) {
@@ -13,43 +13,57 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('query');
     const category = searchParams.get('category');
+    const location = searchParams.get('location');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
     const page = searchParams.get('page') || '0';
     const size = searchParams.get('size') || '10';
     
     // Build the API URL with query parameters
-    let url = `${API_BASE_URL}/api/items/public?page=${page}&size=${size}`;
+    let url = `${BACKEND_URL}/items?page=${page}&size=${size}`;
     if (query) url += `&query=${encodeURIComponent(query)}`;
     if (category && category !== 'all') url += `&category=${encodeURIComponent(category)}`;
+    if (location) url += `&location=${encodeURIComponent(location)}`;
+    if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+    if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
 
+    console.log(`Fetching from backend URL: ${url}`);
+    
     // Fetch data from Spring Boot backend
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
+      cache: 'no-store'
     });
 
     if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
+      console.error(`API responded with status: ${response.status}`);
+      return NextResponse.json(
+        { error: `API responded with status: ${response.status}` },
+        { status: 500 }
+      );
     }
 
     const data = await response.json();
-
+    console.log('Data received from backend:', data);
+    
     // Transform the data to match the frontend format
     const transformedData = {
-      objects: data.content.map((item: any) => ({
+      objects: data.items.map((item: any) => ({
         id: item.id,
         name: item.name || 'Unnamed Item',
         location: item.location || 'Unknown Location',
-        date: item.detectionDate ? new Date(item.detectionDate).toISOString().split('T')[0] : 'Unknown Date',
-        time: item.detectionDate ? new Date(item.detectionDate).toTimeString().split(' ')[0] : 'Unknown Time',
+        date: item.dateFound || item.reportedAt || new Date().toISOString().split('T')[0],
+        time: item.dateFound ? new Date(item.dateFound).toLocaleTimeString() : new Date().toLocaleTimeString(),
         image: item.imageUrl || '/placeholder.svg',
         category: item.category?.toLowerCase() || 'other',
-        description: item.description,
-        status: item.status,
+        description: item.description || 'No description available',
+        status: item.status?.toLowerCase() || 'found'
       })),
-      totalItems: data.totalElements,
+      totalItems: data.totalItems,
       totalPages: data.totalPages,
-      currentPage: data.number,
+      currentPage: data.currentPage
     };
     
     return NextResponse.json(transformedData);

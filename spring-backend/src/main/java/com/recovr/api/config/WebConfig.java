@@ -28,7 +28,7 @@ public class WebConfig implements WebMvcConfigurer {
         String[] exposed = exposedHeaders.split(",");
 
         registry.addMapping("/api/**")  // Only allow CORS for /api/** endpoints
-                .allowedOriginPatterns(origins)
+                .allowedOriginPatterns("*")
                 .allowedMethods(methods)
                 .allowedHeaders(headers)
                 .exposedHeaders(exposed)

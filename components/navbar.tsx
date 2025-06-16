@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
 import { NotificationDropdown } from "@/components/ui/notification-dropdown"
+import { useSession, signOut } from "next-auth/react"
+import { Logo } from "@/components/ui/logo"
 
 const mainNavItems = [
   { title: "Home", href: "/" },
@@ -62,7 +64,7 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="pr-0 sm:max-w-xs bg-background/95 backdrop-blur-xl">
         <Link href="/" className="flex items-center gap-2 px-2 mb-8">
-          <Image src="/logo.svg" width={140} height={50} alt="RECOVR Logo" className="dark:filter dark:brightness-110" />
+          <Logo width={140} height={50} />
         </Link>
         <div className="my-6 flex flex-col gap-2">
           {mainNavItems.map((item, index) => (
@@ -95,6 +97,11 @@ export function MobileNav() {
 }
 
 export function Navbar({ className }: { className?: string }) {
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
+  const isAdmin = session?.user?.role === "ROLE_ADMIN"
+  const user = session?.user
+
   return (
     <header className={cn("sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60", className)}>
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -103,14 +110,7 @@ export function Navbar({ className }: { className?: string }) {
             <MobileNav />
             <Link href="/" className="flex items-center gap-2 mr-10 relative group">
               <div className="absolute -inset-2 rounded-xl bg-background opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <Image 
-                src="/logo.svg" 
-                width={140} 
-                height={50} 
-                alt="RECOVR Logo" 
-                priority 
-                className="h-10 w-auto relative dark:filter dark:brightness-110" 
-              />
+              <Logo width={140} height={40} className="h-10 w-auto relative" />
             </Link>
             <MainNav />
           </div>
@@ -126,12 +126,30 @@ export function Navbar({ className }: { className?: string }) {
             <NotificationDropdown className="mr-2 hidden sm:flex" />
             <ThemeToggle />
             <div className="hidden md:flex md:gap-3 ml-2">
-              <Button variant="outline" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" asChild>
-                <Link href="/auth/signin">Log in</Link>
-              </Button>
-              <GradientButton variant="dark" size="sm" className="h-10 px-4" asChild>
-                <Link href="/auth/register">Sign up</Link>
-              </GradientButton>
+              {isAuthenticated ? (
+                <>
+                  {isAdmin && (
+                    <Button variant="outline" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" asChild>
+                      <Link href="/admin">Admin Dashboard</Link>
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" asChild>
+                    <Link href="/dashboard">Dashboard</Link>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" onClick={() => signOut()}>
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" asChild>
+                    <Link href="/auth/signin">Log in</Link>
+                  </Button>
+                  <GradientButton variant="dark" size="sm" className="h-10 px-4" asChild>
+                    <Link href="/auth/register">Sign up</Link>
+                  </GradientButton>
+                </>
+              )}
             </div>
           </div>
         </div>

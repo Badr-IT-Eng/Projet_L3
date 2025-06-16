@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
@@ -28,6 +27,18 @@ public class FileController {
     @PostMapping("/upload")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+        String fileName = fileStorageService.storeFile(file);
+
+        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/files/")
+                .path(fileName)
+                .toUriString();
+
+        return ResponseEntity.ok(fileDownloadUri);
+    }
+
+    @PostMapping("/detection/upload")
+    public ResponseEntity<?> uploadDetectionFile(@RequestParam("file") MultipartFile file) {
         String fileName = fileStorageService.storeFile(file);
 
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()

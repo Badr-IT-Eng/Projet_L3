@@ -1,0 +1,11 @@
+<svg width="140" height="40" viewBox="0 0 140 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(222, 84%, 20%)" />
+      <stop offset="100%" stop-color="hsl(225, 85%, 15%)" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="8" width="24" height="24" rx="8" fill="url(#logo-gradient)" />
+  <path d="M5 20L9 24L19 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="34" y="28" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#0f172a">RECOVR</text>
+</svg>

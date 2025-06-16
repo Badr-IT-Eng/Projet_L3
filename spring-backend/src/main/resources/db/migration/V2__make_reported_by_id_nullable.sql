@@ -1,0 +1,1 @@
+ALTER TABLE items MODIFY COLUMN reported_by_id BIGINT NULL; 

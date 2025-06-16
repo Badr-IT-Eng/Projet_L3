@@ -22,12 +22,13 @@ from PIL import Image
 import io
 import uuid
 import argparse
+import collections
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class RecovRObjectDetector:
-    def __init__(self, model_path, num_classes=29, device=None, api_base_url="http://localhost:8080/api"):
+    def __init__(self, model_path, num_classes=29, device=None, api_base_url="http://localhost:8082/api"):
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
         self.api_base_url = api_base_url
         print(f"Using device: {self.device}")
@@ -78,6 +79,9 @@ class RecovRObjectDetector:
         # Object tracking
         self.tracked_objects = {}
         self.next_tracking_id = 1
+        
+        self.object_positions = {}  # tracking_id -> (position, last_moved_time, stationary_reported)
+        self.stationary_threshold = 10  # seconds
         
     def start_detection_session(self, camera_id="default_camera", camera_location="Default Location"):
         """Start a detection session with the backend"""
@@ -324,10 +328,21 @@ class RecovRObjectDetector:
                     all_detections.extend(detections)
                     print(f"Found {len(detections)} objects in frame {frame_count}")
                     
-                    # Save to backend if enabled
-                    if save_to_backend:
-                        for detection in detections:
-                            self.save_detection_to_backend(detection, frame)
+                    # Track inactivity for each detection
+                    for det in detections:
+                        tid = det['tracking_id']
+                        x1, y1, x2, y2 = det['bbox']
+                        center = ((x1 + x2) // 2, (y1 + y2) // 2)
+                        pos, last_moved, reported = self.object_positions.get(tid, (center, time.time(), False))
+                        if np.linalg.norm(np.array(center) - np.array(pos)) > 10:  # moved > 10px
+                            self.object_positions[tid] = (center, time.time(), False)
+                        else:
+                            # Not moved
+                            if not reported and (time.time() - last_moved) >= self.stationary_threshold:
+                                print(f"Object {tid} stationary for {self.stationary_threshold}s, sending stationary event.")
+                                if save_to_backend:
+                                    self.save_detection_to_backend(det, frame)
+                                self.object_positions[tid] = (center, last_moved, True)
                 
                 # Display frame with detections (optional)
                 if output_path:

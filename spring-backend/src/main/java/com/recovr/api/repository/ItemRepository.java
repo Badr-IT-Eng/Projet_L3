@@ -19,8 +19,12 @@ import java.util.List;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long>, JpaSpecificationExecutor<Item> {
     Page<Item> findByReportedBy(User user, Pageable pageable);
+    List<Item> findByReportedBy(User user);
+    List<Item> findByReportedByOrderByCreatedAtDesc(User user, Pageable pageable);
     
     Page<Item> findByClaimedBy(User user, Pageable pageable);
+    List<Item> findByClaimedBy(User user);
+    List<Item> findByClaimedByOrderByClaimedAtDesc(User user, Pageable pageable);
     
     Page<Item> findByClaimedAtIsNotNull(Pageable pageable);
     Page<Item> findByClaimedAtIsNull(Pageable pageable);

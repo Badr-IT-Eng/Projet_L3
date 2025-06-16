@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Upload, Search as SearchIcon, Image as ImageIcon } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Loader2, Upload, Search as SearchIcon, Image as ImageIcon, MapPin, Calendar } from "lucide-react"
 import Image from "next/image"
 import { useDropzone } from "react-dropzone"
 
@@ -21,8 +22,10 @@ interface SearchResult {
 }
 
 export default function SearchPage() {
-  const [searchMethod, setSearchMethod] = useState<"image" | "text">("text")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchMethod, setSearchMethod] = useState<"image" | "location">("location")
+  const [location, setLocation] = useState("")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [results, setResults] = useState<SearchResult[]>([])
@@ -50,27 +53,32 @@ export default function SearchPage() {
     multiple: false
   })
 
-  const handleTextSearch = async () => {
-    if (!searchTerm.trim()) return
+  const handleLocationSearch = async () => {
+    if (!location.trim() && !dateFrom && !dateTo) return
 
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch(`/api/lost-objects?search=${encodeURIComponent(searchTerm)}`)
+      const params = new URLSearchParams()
+      if (location.trim()) params.append('location', location)
+      if (dateFrom) params.append('dateFrom', dateFrom)
+      if (dateTo) params.append('dateTo', dateTo)
+      
+      const response = await fetch(`/api/lost-objects?${params.toString()}`)
       
       if (!response.ok) {
         throw new Error("Failed to search objects")
       }
       
       const data = await response.json()
-      setResults(data.items.map((item: any) => ({
+      setResults(data.objects.map((item: any) => ({
         id: item.id,
         name: item.name,
         location: item.location,
         date: item.date,
         image: item.image,
-        matchScore: 100, // Text search doesn't have match scores
+        matchScore: 100, // Location search doesn't have match scores
         category: item.category
       })))
     } catch (err) {
@@ -143,36 +151,68 @@ export default function SearchPage() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Rechercher un objet perdu</h1>
 
-        <Tabs defaultValue="text" value={searchMethod} onValueChange={(v) => setSearchMethod(v as "image" | "text")}>
+        <Tabs defaultValue="location" value={searchMethod} onValueChange={(v) => setSearchMethod(v as "image" | "location")}>
           <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="text">Recherche par texte</TabsTrigger>
+            <TabsTrigger value="location">Recherche par lieu et date</TabsTrigger>
             <TabsTrigger value="image">Recherche par image</TabsTrigger>
         </TabsList>
 
-          <TabsContent value="text">
+          <TabsContent value="location">
             <Card>
               <CardHeader>
-                <CardTitle>Recherche par texte</CardTitle>
+                <CardTitle>
+                  <MapPin className="h-5 w-5 inline mr-2" />
+                  Recherche par lieu et date
+                </CardTitle>
                 <CardDescription>
-                  Entrez une description de l'objet que vous recherchez
+                  Filtrez les objets par lieu et/ou période de temps
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4">
-                  <Input
-                    placeholder="Ex: Sac à dos noir, téléphone Samsung..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleTextSearch()}
-                  />
-                  <Button onClick={handleTextSearch} disabled={loading}>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="location">Lieu</Label>
+                    <Input
+                      id="location"
+                      placeholder="Ex: Bibliothèque, Cafétéria, Salle 101..."
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="dateFrom">
+                        <Calendar className="h-4 w-4 inline mr-1" />
+                        Date de début
+                      </Label>
+                      <Input
+                        id="dateFrom"
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateTo">
+                        <Calendar className="h-4 w-4 inline mr-1" />
+                        Date de fin
+                      </Label>
+                      <Input
+                        id="dateTo"
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleLocationSearch} disabled={loading} className="w-full">
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
+                    ) : (
                       <SearchIcon className="h-4 w-4" />
                     )}
                     <span className="ml-2">Rechercher</span>
-                      </Button>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -282,7 +322,7 @@ export default function SearchPage() {
           </div>
         )}
 
-        {!loading && results.length === 0 && searchTerm && (
+        {!loading && results.length === 0 && (location || dateFrom || dateTo) && (
           <div className="mt-8 text-center text-muted-foreground">
             Aucun résultat trouvé pour votre recherche
                 </div>

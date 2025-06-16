@@ -30,7 +30,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/detection")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Tag(name = "Detection", description = "Detection API for managing object detection sessions and results")
 public class DetectionController {
 

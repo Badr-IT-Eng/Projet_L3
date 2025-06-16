@@ -4,7 +4,6 @@ Download a pre-trained YOLOv8 model for object detection
 """
 
 from ultralytics import YOLO
-import torch
 import logging
 from pathlib import Path
 
@@ -19,14 +18,11 @@ def download_model():
         # Download the smallest YOLOv8 model
         model = YOLO('yolov8n.pt')
         
-        # Save as torchscript format
-        logger.info("💾 Converting and saving model...")
-        model.export(format='torchscript')
+        # Save the model
+        logger.info("💾 Saving model...")
+        model.save('stable_model_epoch_30.pt')
         
-        # Rename to our expected filename
-        Path('yolov8n.torchscript').rename('stable_model_epoch_30.pth')
-        
-        logger.info("✅ Model downloaded and saved as 'stable_model_epoch_30.pth'")
+        logger.info("✅ Model downloaded and saved as 'stable_model_epoch_30.pt'")
         logger.info("\n📝 Model Info:")
         logger.info("- Type: YOLOv8n (nano)")
         logger.info("- Classes: 80 common objects")

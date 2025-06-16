@@ -10,6 +10,8 @@ import com.recovr.api.entity.User;
 import com.recovr.api.repository.ItemRepository;
 import com.recovr.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +50,23 @@ public class AdminService {
          dashboard.setTotalAbandoned(itemRepository.countByStatus(ItemStatus.ABANDONED));
          dashboard.setTotalClaimed(itemRepository.countByStatus(ItemStatus.CLAIMED));
          dashboard.setTotalReturned(itemRepository.countByStatus(ItemStatus.RETURNED));
+         
+         // Get recent items (latest 5)
+         List<Item> recentItems = itemRepository.findAll(
+             PageRequest.of(0, 5, Sort.by("createdAt").descending())
+         ).getContent();
+         dashboard.setRecentItems(
+             recentItems.stream().map(itemService::convertToDto).collect(Collectors.toList())
+         );
+         
+         // Get recent users (latest 5)
+         List<User> recentUsers = userRepository.findAll(
+             PageRequest.of(0, 5, Sort.by("createdAt").descending())
+         ).getContent();
+         dashboard.setRecentUsers(
+             recentUsers.stream().map(this::convertToUserDto).collect(Collectors.toList())
+         );
+         
          return dashboard;
     }
 
@@ -98,7 +117,12 @@ public class AdminService {
          dto.setId(user.getId());
          dto.setUsername(user.getUsername());
          dto.setEmail(user.getEmail());
-         // (Si vous avez une logique pour convertir les rôles, vous pouvez l'ajouter ici)
+         // Convert roles to string list
+         if (user.getRoles() != null) {
+             dto.setRoles(user.getRoles().stream()
+                 .map(role -> role.getName().name())
+                 .collect(Collectors.toList()));
+         }
          return dto;
     }
 

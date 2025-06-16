@@ -22,7 +22,7 @@ from train_improved import get_stable_model
 from config_improved import config
 
 # Configuration modèles STABLE
-STABLE_MODELS_DIR = "output_stable_training"
+STABLE_MODELS_DIR = "."
 IMAGE_SIZE = (320, 320)
 
 # Classes des modèles stable (28 classes)

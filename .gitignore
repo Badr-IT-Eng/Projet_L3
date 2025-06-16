@@ -39,45 +39,67 @@ dist/
 downloads/
 eggs/
 .eggs/
+lib/
 lib64/
 parts/
 sdist/
 var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 
-# ML Models and Data
+# Virtual Environment
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# YOLO and ML models
 *.pt
 *.pth
-*.onnx
 *.weights
-*.h5
-*.hdf5
-*.pb
-*.tflite
-*.mlmodel
-*.mlpackage
-*.tfl
-*.lite
-*.bin
-*.model
-*.joblib
-*.pkl
-*.pickle
-*.npy
-*.npz
-*.hdf5
-*.h5
-*.tfrecord
-*.tfrecords
+*.onnx
+*.engine
+*.trt
+*.wts
+*.cfg
+*.names
+
+# Generated files
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Logs
+*.log
+logs/
+detection_logs/
+
+# Database
 *.db
 *.sqlite
 *.sqlite3
-*.db-journal
-*.db-shm
-*.db-wal
+
+# Spring Boot
+spring-backend/target/
+spring-backend/.mvn/
+spring-backend/mvnw
+spring-backend/mvnw.cmd
+spring-backend/.settings/
+spring-backend/.classpath
+spring-backend/.project
+spring-backend/.factorypath
 
 # Model checkpoints and snapshots
 /snapshots/
@@ -88,13 +110,6 @@ wheels/
 /mlruns/
 /tensorboard/
 /lightning_logs/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
 
 # OS
 .DS_Store
@@ -118,3 +133,17 @@ Thumbs.db
 /detection-service/logs/
 /detection-service/*.log
 /detection-service/.env*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Keep important files
+!spring-backend/src/main/resources/application.properties
+!spring-backend/src/main/resources/application-dev.properties
+!spring-backend/src/main/resources/application-prod.properties
+!detection-service/yolov12/detect_lost_objects.py
+!detection-service/yolov12/requirements.txt
+!README.md
+!LICENSE

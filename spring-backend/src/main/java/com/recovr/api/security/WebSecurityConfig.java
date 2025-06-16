@@ -4,6 +4,7 @@ import com.recovr.api.security.jwt.JwtAuthenticationEntryPoint;
 import com.recovr.api.security.jwt.JwtRequestFilter;
 import com.recovr.api.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,6 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -34,6 +36,18 @@ public class WebSecurityConfig {
 
     @Autowired
     private JwtAuthenticationEntryPoint unauthorizedHandler;
+
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
+
+    @Value("${cors.allowed-methods}")
+    private String allowedMethods;
+
+    @Value("${cors.allowed-headers}")
+    private String allowedHeaders;
+
+    @Value("${cors.exposed-headers}")
+    private String exposedHeaders;
 
     @Bean
     public JwtRequestFilter authenticationJwtTokenFilter() {
@@ -60,6 +74,20 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8082", "http://localhost:3000", "http://localhost:3001"));
+        configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
+        configuration.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
+        configuration.setExposedHeaders(Arrays.asList(exposedHeaders.split(",")));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
@@ -69,6 +97,7 @@ public class WebSecurityConfig {
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/api/test/**").permitAll()
                 
                 // Public read access to items
                 .requestMatchers(HttpMethod.GET, "/api/items/public").permitAll()
@@ -76,8 +105,15 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/items/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items").permitAll()
                 
+                // Allow object detection service to create items without auth
+                .requestMatchers(HttpMethod.POST, "/api/items").permitAll()
+                
                 // File access - allow public read for images
                 .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                
+                // Allow object detection service to upload files without auth
+                .requestMatchers(HttpMethod.POST, "/api/files/upload").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/files/detection/upload").permitAll()
                 
                 // Health checks
                 .requestMatchers("/api/health/**").permitAll()
@@ -95,16 +131,18 @@ public class WebSecurityConfig {
                 // User profile - require authentication
                 .requestMatchers("/api/user/**").authenticated()
                 
-                // Item creation/modification - require authentication
-                .requestMatchers(HttpMethod.POST, "/api/items").authenticated()
+                // Item updates - require authentication
                 .requestMatchers(HttpMethod.PUT, "/api/items/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/items/**").hasRole("ADMIN")
                 
                 // Search endpoints - public
                 .requestMatchers("/api/search/**").permitAll()
                 
-                // File upload - require authentication
-                .requestMatchers(HttpMethod.POST, "/api/files/**").authenticated()
+                // File upload for multiple files - require authentication
+                .requestMatchers(HttpMethod.POST, "/api/files/upload-multiple").authenticated()
+                
+                // Detection sessions - allow public access for testing
+                .requestMatchers("/api/detection/sessions/**").permitAll()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()
@@ -117,19 +155,5 @@ public class WebSecurityConfig {
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

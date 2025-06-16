@@ -38,28 +38,31 @@ export default function LostObjectsPage() {
   // Load objects when search parameters change
   useEffect(() => {
     const loadObjects = async () => {
-      setLoading(true);
-      setError(null);
-      
       try {
-        // Build query parameters
-        const params = new URLSearchParams({
+        setLoading(true);
+        setError(null);
+        
+        const searchParams = new URLSearchParams({
           page: currentPage.toString(),
-          size: "12",
+          size: '12'
         });
         
-        if (searchTerm) params.append("query", searchTerm);
-        if (activeCategory !== "all") params.append("category", activeCategory);
+        if (searchTerm) {
+          searchParams.append('query', searchTerm);
+        }
         
-        // Fetch data from API
-        const response = await fetch(`/api/lost-objects?${params.toString()}`);
+        if (activeCategory !== 'all') {
+          searchParams.append('category', activeCategory);
+        }
+        
+        const response = await fetch(`/api/lost-objects?${searchParams.toString()}`);
         
         if (!response.ok) {
-          throw new Error("Failed to fetch objects");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to fetch objects");
         }
         
         const data = await response.json();
-        
         setObjects(data.objects);
         setTotalPages(data.totalPages);
         setTotalItems(data.totalItems);
@@ -71,8 +74,8 @@ export default function LostObjectsPage() {
         router.push(`/lost-objects?${newParams.toString()}`, { scroll: false });
         
       } catch (err) {
-        console.error("Error loading objects:", err);
-        setError("Failed to load objects. Please try again.");
+        console.error('Error fetching lost objects:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load objects');
       } finally {
         setLoading(false);
       }
@@ -197,6 +200,7 @@ function LostObjectCard({ object }: { object: LostObject }) {
           alt={object.name} 
           fill 
           className="object-cover"
+          unoptimized={object.image?.startsWith('http')}
         />
       </div>
       <CardHeader>
@@ -221,7 +225,7 @@ function LostObjectCard({ object }: { object: LostObject }) {
       <CardFooter>
         <Button variant="outline" className="w-full" asChild>
           <Link href={`/lost-objects/${object.id}`}>
-          View Details
+            View Details
           </Link>
         </Button>
       </CardFooter>

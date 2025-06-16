@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -90,6 +89,10 @@ public class AuthController {
         user.setPassword(encoder.encode(signUpRequest.getPassword()));
         user.setFirstName(signUpRequest.getFirstName());
         user.setLastName(signUpRequest.getLastName());
+        // Set full_name by concatenating firstName and lastName
+        String fullName = (signUpRequest.getFirstName() != null ? signUpRequest.getFirstName() : "") + 
+                         (signUpRequest.getLastName() != null ? " " + signUpRequest.getLastName() : "").trim();
+        user.setFullName(fullName.isEmpty() ? signUpRequest.getUsername() : fullName); // Fallback to username if no name provided
         user.setPhone(signUpRequest.getPhone());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
@@ -122,5 +125,27 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(new MessageResponse("Not authenticated"));
+        }
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(new JwtResponse(
+                null, // No token in response for this endpoint
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                userDetails.getAuthorities().stream()
+                        .map(item -> item.getAuthority())
+                        .collect(Collectors.toList())
+        ));
     }
 }

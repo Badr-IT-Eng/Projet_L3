@@ -1,8 +1,10 @@
 package com.recovr.api.controller;
 
+import com.recovr.api.dto.UserDashboardDto;
 import com.recovr.api.entity.User;
 import com.recovr.api.repository.UserRepository;
 import com.recovr.api.security.services.UserDetailsImpl;
+import com.recovr.api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+//@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -24,6 +26,9 @@ public class UserController {
 
     @Autowired
     private PasswordEncoder encoder;
+
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/profile")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
@@ -45,6 +50,23 @@ public class UserController {
         profile.put("createdAt", user.getCreatedAt());
         
         return new ResponseEntity<>(profile, HttpStatus.OK);
+    }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> getUserDashboard() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            
+            User user = userRepository.findById(userDetails.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            UserDashboardDto dashboard = userService.getUserDashboard(user);
+            return new ResponseEntity<>(dashboard, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error loading dashboard: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PutMapping("/profile")

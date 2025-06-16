@@ -1,13 +1,13 @@
 import { AuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { JWT } from "next-auth/jwt"
-import bcrypt from "bcryptjs"
 
 // Add custom types to extend NextAuth types
 declare module "next-auth" {
   interface User {
     id: string
     role?: string
+    accessToken?: string
   }
   
   interface Session {
@@ -18,6 +18,7 @@ declare module "next-auth" {
       image?: string | null
       role?: string
     }
+    accessToken?: string
   }
 }
 
@@ -25,64 +26,47 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string
     role?: string
+    accessToken?: string
   }
 }
 
-// Mock user database for development
-const MOCK_USERS = [
-  {
-    id: "user-1",
-    name: "Test User",
-    email: "test@example.com",
-    password: bcrypt.hashSync("password123", 10),
-    role: "user"
-  },
-  {
-    id: "admin-1",
-    name: "Admin User",
-    email: "admin@example.com",
-    password: bcrypt.hashSync("admin123", 10),
-    role: "admin"
-  }
-];
-
-// This is a simplified version of the auth options with mock functionality
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null
         }
 
         try {
-          // For development, use mock user database
-          const user = MOCK_USERS.find(u => u.email === credentials.email);
-          
-          if (!user) {
-            console.log("User not found");
+          const response = await fetch("http://localhost:8082/api/auth/signin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: credentials.username,
+              password: credentials.password,
+            }),
+          });
+
+          if (!response.ok) {
             return null;
           }
-          
-          // Verify password
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-          
-          if (!isPasswordValid) {
-            console.log("Invalid password");
-            return null;
-          }
+
+          const data = await response.json();
           
           return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            image: null
+            id: data.id.toString(),
+            name: data.username,
+            email: data.email,
+            role: data.roles[0], // Assuming the first role is the primary role
+            accessToken: data.token // Add the JWT token to the user object
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -103,6 +87,7 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.accessToken = user.accessToken // Store the JWT token in the JWT
       }
       return token
     },
@@ -110,11 +95,11 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         session.user.id = token.id
         session.user.role = token.role
+        session.accessToken = token.accessToken // Add the JWT token to the session
       }
       return session
     },
   },
-  // This is a development secret and should be replaced in production
   secret: process.env.NEXTAUTH_SECRET || "ThisIsATemporarySecretForDevelopmentOnly",
   debug: process.env.NODE_ENV === "development",
 } 

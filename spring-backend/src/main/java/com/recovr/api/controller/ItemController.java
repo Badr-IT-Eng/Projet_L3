@@ -41,10 +41,13 @@ public class ItemController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         try {
             Pageable paging = PageRequest.of(page, size, Sort.by("createdAt").descending());
-            Page<ItemDto> pageItems = itemService.getAllItems(paging, category, status);
+            Page<ItemDto> pageItems = itemService.getAllItems(paging, category, status, location, dateFrom, dateTo);
 
             Map<String, Object> response = new HashMap<>();
             response.put("items", pageItems.getContent());

@@ -2,6 +2,8 @@ package com.recovr.api.dto;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 public class AdminDashboardDto {
     private long totalItems;
@@ -11,10 +13,14 @@ public class AdminDashboardDto {
     private long totalAbandoned;
     private long totalClaimed;
     private long totalReturned;
+    private List<ItemDto> recentItems;
+    private List<UserDto> recentUsers;
 
     public AdminDashboardDto() {
          this.itemsByStatus = new HashMap<>();
-         this.itemsByCategory = new HashMap();
+         this.itemsByCategory = new HashMap<>();
+         this.recentItems = new ArrayList<>();
+         this.recentUsers = new ArrayList<>();
     }
 
     public long getTotalItems() { return totalItems; }
@@ -37,5 +43,11 @@ public class AdminDashboardDto {
 
     public long getTotalReturned() { return totalReturned; }
     public void setTotalReturned(long totalReturned) { this.totalReturned = totalReturned; }
+
+    public List<ItemDto> getRecentItems() { return recentItems; }
+    public void setRecentItems(List<ItemDto> recentItems) { this.recentItems = recentItems; }
+
+    public List<UserDto> getRecentUsers() { return recentUsers; }
+    public void setRecentUsers(List<UserDto> recentUsers) { this.recentUsers = recentUsers; }
 
 } 
