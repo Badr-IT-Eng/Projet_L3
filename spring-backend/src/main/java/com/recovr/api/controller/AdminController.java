@@ -11,9 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/admin")
 @Tag(name = "Admin", description = "Admin dashboard endpoints")
 public class AdminController {
 
@@ -66,6 +67,13 @@ public class AdminController {
     @Operation(summary = "Update a user (admin)", description = "Updates a user by its ID for administration.")
     public ResponseEntity<UserDto> updateUserAdmin(@PathVariable Long id, @RequestBody UserDto userDto) {
         UserDto updated = adminService.updateUserAdmin(id, userDto);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/users/{id}/role")
+    @Operation(summary = "Update user role (admin)", description = "Updates a user's role for administration.")
+    public ResponseEntity<UserDto> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> roleRequest) {
+        UserDto updated = adminService.updateUserRole(id, roleRequest.get("role"));
         return ResponseEntity.ok(updated);
     }
 }

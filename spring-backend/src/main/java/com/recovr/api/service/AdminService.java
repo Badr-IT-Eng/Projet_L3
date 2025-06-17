@@ -3,11 +3,13 @@ package com.recovr.api.service;
 import com.recovr.api.dto.AdminDashboardDto;
 import com.recovr.api.dto.ItemDto;
 import com.recovr.api.dto.UserDto;
+import com.recovr.api.entity.ERole;
 import com.recovr.api.entity.Item;
 import com.recovr.api.entity.ItemCategory;
 import com.recovr.api.entity.ItemStatus;
 import com.recovr.api.entity.User;
 import com.recovr.api.repository.ItemRepository;
+import com.recovr.api.repository.RoleRepository;
 import com.recovr.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,9 @@ public class AdminService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private ItemService itemService;
@@ -112,11 +117,27 @@ public class AdminService {
          return convertToUserDto(savedUser);
     }
 
+    @Transactional
+    public UserDto updateUserRole(Long id, String role) {
+         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+         // For simplicity, we'll update the role directly
+         // Note: This is a simplified implementation. In production, you might want to handle role assignments differently
+         user.getRoles().clear();
+         if ("ROLE_ADMIN".equals(role)) {
+             user.getRoles().add(roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Admin role not found")));
+         } else {
+             user.getRoles().add(roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("User role not found")));
+         }
+         User savedUser = userRepository.save(user);
+         return convertToUserDto(savedUser);
+    }
+
     private UserDto convertToUserDto(User user) {
          UserDto dto = new UserDto();
          dto.setId(user.getId());
          dto.setUsername(user.getUsername());
          dto.setEmail(user.getEmail());
+         dto.setCreatedAt(user.getCreatedAt());
          // Convert roles to string list
          if (user.getRoles() != null) {
              dto.setRoles(user.getRoles().stream()

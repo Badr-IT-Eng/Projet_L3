@@ -32,7 +32,7 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Allow access to public routes
+        // Allow access to public routes and static assets
         if (
           pathname.startsWith("/auth") ||
           pathname.startsWith("/admin/login") ||
@@ -40,7 +40,10 @@ export default withAuth(
           pathname.startsWith("/_next") ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/api/items") ||
-          pathname.startsWith("/api/search")
+          pathname.startsWith("/api/search") ||
+          pathname.startsWith("/public/") ||
+          pathname.includes(".") || // Static files with extensions
+          pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|webp|css|js|mp4|txt|json)$/)
         ) {
           return true
         }
@@ -54,6 +57,13 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api/auth (auth API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api/auth|_next/static|_next/image|favicon\\.ico).*)',
   ],
 } 

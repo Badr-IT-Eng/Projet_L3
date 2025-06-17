@@ -18,6 +18,8 @@ const mainNavItems = [
   { title: "Lost Items", href: "/lost-objects" },
   { title: "Report Item", href: "/report" },
   { title: "Find Item", href: "/search", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
+  { title: "AI Matching", href: "/matching" },
+  { title: "Detection", href: "/detection" },
   { title: "Map", href: "/map" },
 ]
 
