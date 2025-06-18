@@ -463,19 +463,39 @@ export default function SearchPage() {
             Search Results ({results.length} items found)
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {results.map((result) => (
-              <Card key={result.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-48 w-full">
-                  <Image
-                    src={result.image}
-                    alt={result.name}
-                    fill
-                    className="object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.src = "/placeholder.svg"
-                    }}
-                  />
+            {results.map((result) => {
+              // Validate and sanitize image URL
+              const getValidImageUrl = (url: string) => {
+                if (!url) return "/placeholder.svg";
+                if (url === "/placeholder.svg") return url;
+                try {
+                  // Test if it's a valid URL
+                  new URL(url);
+                  return url;
+                } catch {
+                  // If not a valid URL, check if it's a relative path
+                  if (url.startsWith("/") || url.startsWith("http")) {
+                    return url;
+                  }
+                  return "/placeholder.svg";
+                }
+              };
+
+              const validImageUrl = getValidImageUrl(result.image);
+
+              return (
+                <Card key={result.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative h-48 w-full">
+                    <Image
+                      src={validImageUrl}
+                      alt={result.name}
+                      fill
+                      className="object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg"
+                      }}
+                    />
                   {result.matchScore && result.matchScore < 100 && (
                     <Badge
                       variant="secondary"
@@ -512,7 +532,8 @@ export default function SearchPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

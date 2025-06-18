@@ -15,7 +15,8 @@ import {
   RotateCcw, 
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Camera
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthenticatedApi } from "@/hooks/use-api";
@@ -30,6 +31,8 @@ interface DetectionResult {
   width: number;
   height: number;
   timestamp: string;
+  imageUrl?: string;
+  croppedImage?: string;
 }
 
 export default function VideoDetectionPage() {
@@ -42,8 +45,64 @@ export default function VideoDetectionPage() {
   const [cameraLocation, setCameraLocation] = useState("Admin Upload");
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const { apiCall } = useAuthenticatedApi();
+
+  // Capture frame from video and crop detected object
+  const captureObjectImage = async (x: number, y: number, width: number, height: number): Promise<string | null> => {
+    if (!videoRef.current || !canvasRef.current) return null;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) return null;
+
+    // Set canvas size to match the detected object
+    canvas.width = width;
+    canvas.height = height;
+
+    // Draw the cropped portion of the video to canvas
+    ctx.drawImage(
+      video,
+      x, y, width, height,  // Source rectangle (detected object area)
+      0, 0, width, height   // Destination rectangle (full canvas)
+    );
+
+    // Convert canvas to blob and upload
+    return new Promise((resolve) => {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          resolve(null);
+          return;
+        }
+
+        try {
+          // Create FormData to upload the cropped image
+          const formData = new FormData();
+          formData.append('file', blob, `detected_object_${Date.now()}.jpg`);
+
+          // Upload to backend file service
+          const uploadResponse = await fetch('http://localhost:8082/api/files/detection/upload', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (uploadResponse.ok) {
+            const imageUrl = await uploadResponse.text();
+            resolve(imageUrl);
+          } else {
+            console.error('Failed to upload image');
+            resolve(null);
+          }
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          resolve(null);
+        }
+      }, 'image/jpeg', 0.9);
+    });
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -86,42 +145,70 @@ export default function VideoDetectionPage() {
   };
 
   const simulateDetection = async (currentSessionId: string) => {
-    // Simulate object detection results
+    if (!videoRef.current) {
+      console.error('Video reference not available');
+      return;
+    }
+
+    // Get video dimensions for realistic detection coordinates
+    const video = videoRef.current;
+    const videoWidth = video.videoWidth || video.clientWidth;
+    const videoHeight = video.videoHeight || video.clientHeight;
+
+    // Simulate object detection results with realistic coordinates
     const mockDetections = [
       {
         trackingId: `obj_${Date.now()}_1`,
         category: "BAGS",
         confidence: 0.85,
-        x: 150,
-        y: 100,
-        width: 80,
-        height: 60,
+        x: Math.floor(videoWidth * 0.2),
+        y: Math.floor(videoHeight * 0.3),
+        width: Math.floor(videoWidth * 0.15),
+        height: Math.floor(videoHeight * 0.12),
         snapshotUrl: "detection_frame_1.jpg"
       },
       {
         trackingId: `obj_${Date.now()}_2`,
         category: "ELECTRONICS",
         confidence: 0.92,
-        x: 300,
-        y: 200,
-        width: 120,
-        height: 90,
+        x: Math.floor(videoWidth * 0.5),
+        y: Math.floor(videoHeight * 0.4),
+        width: Math.floor(videoWidth * 0.18),
+        height: Math.floor(videoHeight * 0.15),
         snapshotUrl: "detection_frame_2.jpg"
       },
       {
         trackingId: `obj_${Date.now()}_3`,
         category: "KEYS",
         confidence: 0.78,
-        x: 450,
-        y: 150,
-        width: 40,
-        height: 30,
+        x: Math.floor(videoWidth * 0.7),
+        y: Math.floor(videoHeight * 0.2),
+        width: Math.floor(videoWidth * 0.08),
+        height: Math.floor(videoHeight * 0.06),
         snapshotUrl: "detection_frame_3.jpg"
       }
     ];
 
     for (const detection of mockDetections) {
       try {
+        // Capture actual image from video at detection coordinates
+        const capturedImageUrl = await captureObjectImage(
+          detection.x, 
+          detection.y, 
+          detection.width, 
+          detection.height
+        );
+
+        if (!capturedImageUrl) {
+          console.error('Failed to capture image for detection');
+          // Continue with detection but without image
+          toast({
+            title: "Image Capture Failed",
+            description: `Could not capture image for ${detection.category} detection`,
+            variant: "destructive",
+          });
+        }
+
         // Process detection in backend
         const detectionResponse = await fetch('http://localhost:8082/api/detection/process', {
           method: 'POST',
@@ -130,7 +217,8 @@ export default function VideoDetectionPage() {
           },
           body: JSON.stringify({
             sessionId: currentSessionId,
-            ...detection
+            ...detection,
+            snapshotUrl: capturedImageUrl || "no_image_captured.jpg"
           }),
         });
 
@@ -147,10 +235,12 @@ export default function VideoDetectionPage() {
             y: detection.y,
             width: detection.width,
             height: detection.height,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            imageUrl: capturedImageUrl,
+            croppedImage: capturedImageUrl
           }]);
 
-          // Create item in lost objects table
+          // Create item in lost objects table with actual captured image
           const itemData = {
             name: `Detected ${detection.category.toLowerCase()}`,
             description: `Detected by AI with confidence ${Math.round(detection.confidence * 100)}% at ${new Date().toLocaleString()}`,
@@ -158,7 +248,7 @@ export default function VideoDetectionPage() {
             category: detection.category,
             status: 'FOUND',
             location: `${cameraLocation} (X:${detection.x}, Y:${detection.y})`,
-            imageUrl: detection.snapshotUrl,
+            imageUrl: capturedImageUrl || "/placeholder.svg",
             latitude: null,
             longitude: null
           };
@@ -172,7 +262,7 @@ export default function VideoDetectionPage() {
           });
 
           if (itemResponse.ok) {
-            console.log('Item created successfully in lost objects table');
+            console.log('Item created successfully in lost objects table with image:', capturedImageUrl);
           }
         }
       } catch (error) {
@@ -180,7 +270,7 @@ export default function VideoDetectionPage() {
       }
       
       // Add delay between detections to simulate real-time processing
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   };
 
@@ -257,7 +347,7 @@ export default function VideoDetectionPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Video Detection</h1>
           <p className="text-muted-foreground">
-            Upload videos to automatically detect and catalog lost objects
+            Upload videos to automatically detect and catalog lost objects with captured images
           </p>
         </div>
       </div>
@@ -305,6 +395,11 @@ export default function VideoDetectionPage() {
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                 />
+                {/* Hidden canvas for image capture */}
+                <canvas
+                  ref={canvasRef}
+                  style={{ display: 'none' }}
+                />
                 <div className="flex gap-2">
                   <Button onClick={togglePlayPause} variant="outline" size="sm">
                     {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -341,7 +436,7 @@ export default function VideoDetectionPage() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Analyzing video frames for object detection. This may take a few minutes...
+                  Analyzing video frames for object detection and capturing images. This may take a few minutes...
                 </AlertDescription>
               </Alert>
             )}
@@ -369,7 +464,7 @@ export default function VideoDetectionPage() {
                 {detectionResults.map((result) => (
                   <div
                     key={result.id}
-                    className="p-3 border rounded-lg space-y-2"
+                    className="p-3 border rounded-lg space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <Badge variant="outline">{result.category}</Badge>
@@ -377,15 +472,32 @@ export default function VideoDetectionPage() {
                         {Math.round(result.confidence * 100)}% confidence
                       </span>
                     </div>
-                    <div className="text-sm space-y-1">
-                      <div>Position: ({result.x}, {result.y})</div>
-                      <div>Size: {result.width} × {result.height}</div>
-                      <div>ID: {result.trackingId}</div>
-                      <div className="text-xs text-muted-foreground">
+                    
+                    {/* Display captured image */}
+                    {result.croppedImage && (
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                          <img 
+                            src={result.croppedImage} 
+                            alt={`Detected ${result.category}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 text-sm space-y-1">
+                          <div>Position: ({result.x}, {result.y})</div>
+                          <div>Size: {result.width} × {result.height}</div>
+                          <div>ID: {result.trackingId}</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="text-xs space-y-1">
+                      <div className="text-muted-foreground">
                         Detected: {new Date(result.timestamp).toLocaleString()}
                       </div>
-                      <div className="text-xs text-green-600 font-medium">
-                        ✓ Added to lost objects database
+                      <div className="text-green-600 font-medium flex items-center gap-1">
+                        <Camera className="w-3 h-3" />
+                        ✓ Image captured and saved to database
                       </div>
                     </div>
                   </div>

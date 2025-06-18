@@ -21,20 +21,20 @@ port_in_use() {
 # Function to start Spring Boot backend
 start_backend() {
     echo "🚀 Starting Spring Boot Backend..."
-    cd spring-backend-jdbc
+    cd spring-backend
     
-    if [ ! -f "./mvnw" ]; then
-        echo "❌ Maven wrapper not found!"
+    if [ ! -f "./gradlew" ]; then
+        echo "❌ Gradle wrapper not found!"
         echo "Run the setup first: ./setup_project.sh"
         exit 1
     fi
     
-    if port_in_use 8082; then
-        echo "⚠️ Port 8082 already in use"
+    if port_in_use 8080; then
+        echo "⚠️ Port 8080 already in use"
         echo "Backend might already be running"
     else
-        echo "Starting backend on port 8082..."
-        ./mvnw spring-boot:run &
+        echo "Starting backend on port 8080..."
+        ./gradlew bootRun &
         BACKEND_PID=$!
         echo "Backend PID: $BACKEND_PID"
     fi
@@ -110,8 +110,8 @@ show_status() {
     echo "======================"
     
     # Check backend
-    if port_in_use 8082; then
-        echo "✅ Backend: Running on http://localhost:8082"
+    if port_in_use 8080; then
+        echo "✅ Backend: Running on http://localhost:8080"
     else
         echo "❌ Backend: Not running"
     fi
@@ -159,17 +159,17 @@ show_help() {
 stop_services() {
     echo "🛑 Stopping RECOVR services..."
     
-    # Kill processes on ports 3000 and 8082
+    # Kill processes on ports 3000 and 8080
     if port_in_use 3000; then
         echo "Stopping frontend (port 3000)..."
         pkill -f "next dev" 2>/dev/null || true
         lsof -ti:3000 | xargs kill -9 2>/dev/null || true
     fi
     
-    if port_in_use 8082; then
-        echo "Stopping backend (port 8082)..."
-        pkill -f "mvnw spring-boot:run" 2>/dev/null || true
-        lsof -ti:8082 | xargs kill -9 2>/dev/null || true
+    if port_in_use 8080; then
+        echo "Stopping backend (port 8080)..."
+        pkill -f "gradle.*bootRun" 2>/dev/null || true
+        lsof -ti:8080 | xargs kill -9 2>/dev/null || true
     fi
     
     # Kill Python detection processes
@@ -193,7 +193,7 @@ case "${1:-all}" in
         ;;
     "backend")
         start_backend
-        echo "✅ Backend started! Check http://localhost:8082"
+        echo "✅ Backend started! Check http://localhost:8080"
         ;;
     "frontend")
         start_frontend
@@ -226,7 +226,7 @@ echo ""
 echo "🎯 RECOVR System Ready!"
 echo "====================="
 echo "Frontend: http://localhost:3000"
-echo "Backend API: http://localhost:8082"
+echo "Backend API: http://localhost:8080"
 echo "Object Detection: Camera-based real-time detection"
 echo ""
 echo "Press Ctrl+C to stop services" 

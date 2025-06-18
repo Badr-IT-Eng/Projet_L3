@@ -56,7 +56,24 @@ export async function GET(request: NextRequest) {
         location: item.location || 'Unknown Location',
         date: item.dateFound || item.reportedAt || new Date().toISOString().split('T')[0],
         time: item.dateFound ? new Date(item.dateFound).toLocaleTimeString() : new Date().toLocaleTimeString(),
-        image: item.imageUrl && item.imageUrl !== 'test.jpg' && !item.imageUrl.startsWith('http') ? `/placeholder.svg` : (item.imageUrl === 'test.jpg' ? '/placeholder.svg' : item.imageUrl || '/placeholder.svg'),
+        image: (() => {
+          if (!item.imageUrl || item.imageUrl === 'test.jpg') {
+            return '/placeholder.svg';
+          }
+          
+          // If it's already a full URL, return as is
+          if (item.imageUrl.startsWith('http')) {
+            return item.imageUrl;
+          }
+          
+          // If it's a relative path starting with /, prepend backend URL
+          if (item.imageUrl.startsWith('/')) {
+            return `http://localhost:8082${item.imageUrl}`;
+          }
+          
+          // For other cases (like just filenames), treat as API endpoint
+          return `http://localhost:8082/api/files/${item.imageUrl}`;
+        })(),
         category: item.category?.toLowerCase() || 'other',
         description: item.description || 'No description available',
         status: item.status?.toLowerCase() || 'found'
