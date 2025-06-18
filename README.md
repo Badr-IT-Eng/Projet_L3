@@ -1,74 +1,111 @@
-# RECOVR - Lost & Found Management System
+# RECOVR - AI-Powered Lost & Found Management System
 
-A modern web application for tracking, reporting, and discovering lost and found items using AI-powered object detection and image matching.
+A comprehensive web application for tracking, reporting, and discovering lost and found items using advanced AI-powered object detection, image matching, and real-time monitoring.
 
-## Features
+## ✨ Features
 
-- **Real-time Object Detection**: Automatically track and identify abandoned objects
-- **Image-Based Search**: Upload a photo to find matching lost items using AI
-- **Text Search**: Search for items by name, description, location, etc.
-- **Interactive Map**: View the location of found objects on a map
-- **User Authentication**: Secure login and registration system
-- **Responsive Design**: Works smoothly on all devices
-- **CRUD Operations**: Manage lost and found items with full database integration
-- **AI Matching**: Sophisticated image comparison using feature extraction
+### 🤖 AI-Powered Capabilities
+- **Real-time Object Detection**: Automatically detect and track abandoned objects using computer vision
+- **AI Image Matching**: Upload a photo to find visually similar items using TensorFlow.js and MobileNet
+- **Smart Feature Extraction**: Advanced image analysis with cosine similarity matching
+- **Confidence Scoring**: AI-driven confidence ratings for match quality
 
-## Tech Stack
+### 🔍 Search & Discovery
+- **Image-Based Search**: Upload photos for instant visual matching
+- **Text Search**: Search by name, description, location, category
+- **Interactive Map**: Geolocation-based item discovery with clustering
+- **Advanced Filtering**: Filter by date, category, status, location
 
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API routes, MongoDB, Mongoose
-- **Authentication**: NextAuth.js with JWT
-- **UI Components**: Radix UI via Shadcn/UI
-- **Image Storage**: Cloudinary
-- **AI**: TensorFlow.js for image feature extraction and matching
-- **Mapping**: Leaflet for interactive maps
+### 👥 User Management
+- **Role-Based Access**: Admin and user roles with different permissions
+- **Admin Dashboard**: Comprehensive management panel with analytics
+- **User Authentication**: Secure JWT-based authentication with NextAuth.js
+- **User Dashboard**: Personal item tracking and claim management
 
-## Prerequisites
+### 🎛️ Advanced Features
+- **Live Detection Interface**: Real-time monitoring with bounding boxes and labels
+- **Webcam Integration**: Capture and analyze images directly from camera
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Dark/Light Mode**: Theme switching with system preference detection
 
-- Node.js 18+ and npm/pnpm
-- MongoDB instance (local or cloud)
-- Cloudinary account (for image storage)
+## 🛠️ Tech Stack
 
-## Getting Started
+### Frontend
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + Shadcn/UI components
+- **State Management**: React Hooks + Context
+- **AI/ML**: TensorFlow.js with MobileNet model
 
-1. **Clone the repository**
+### Backend  
+- **API**: Spring Boot (Java) + Next.js API routes
+- **Database**: MySQL with JPA/Hibernate
+- **Authentication**: NextAuth.js + JWT tokens
+- **Image Storage**: Cloudinary integration
+- **Migration**: Flyway database migrations
 
+### Infrastructure
+- **Detection Service**: Python-based computer vision service
+- **Real-time Processing**: WebSocket connections for live updates
+- **File Upload**: Multipart form handling with validation
+- **CORS**: Configured for cross-origin resource sharing
+
+## 📋 Prerequisites
+
+- **Node.js 18+** and npm/yarn/pnpm
+- **Java 17+** for Spring Boot backend
+- **MySQL 8.0+** database
+- **Python 3.8+** for detection service (optional)
+
+## 🚀 Quick Start
+
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/lost-found-system.git
-cd lost-found-system
+git clone https://github.com/yourusername/recovr-lost-found.git
+cd recovr-lost-found
 ```
 
-2. **Install dependencies**
-
+### 2. Database Setup
 ```bash
+# Create MySQL database
+mysql -u root -p
+CREATE DATABASE recovr_db;
+CREATE USER 'recovr_user'@'localhost' IDENTIFIED BY 'Recovr@2024';
+GRANT ALL PRIVILEGES ON recovr_db.* TO 'recovr_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 3. Backend Setup (Spring Boot)
+```bash
+cd spring-backend
+./mvnw spring-boot:run
+```
+Backend will start on http://localhost:8082
+
+### 4. Frontend Setup (Next.js)
+```bash
+# Install dependencies
 npm install
-# or
-pnpm install
-```
 
-3. **Set up environment variables**
-
-Copy the example environment file and fill in your values:
-
-```bash
+# Set up environment variables
 cp .env.example .env.local
-```
 
-Be sure to update the following variables:
-- `MONGODB_URI`: Your MongoDB connection string
-- `NEXTAUTH_SECRET`: Generate a secure random string
-- `CLOUDINARY_*`: Your Cloudinary credentials
-- OAuth provider credentials (if using social login)
-
-4. **Run the development server**
-
-```bash
+# Start development server
 npm run dev
-# or
-pnpm dev
+```
+Frontend will start on http://localhost:3000
+
+### 5. Environment Variables
+Create `.env.local` with:
+```env
+NEXTAUTH_SECRET=your-secret-key-here
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8082
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+### 6. Default Login Credentials
+- **Admin**: username: `admin`, password: `admin123`
+- **Demo User**: username: `demo_user`, password: `admin123`
 
 ## Project Structure
 

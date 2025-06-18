@@ -37,10 +37,17 @@ export default withAuth(
           pathname.startsWith("/auth") ||
           pathname.startsWith("/admin/login") ||
           pathname === "/" ||
+          pathname === "/lost-items" ||
+          pathname === "/search" ||
+          pathname === "/map" ||
           pathname.startsWith("/_next") ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/api/items") ||
+          pathname.startsWith("/api/lost-objects") ||
           pathname.startsWith("/api/search") ||
+          pathname.startsWith("/api/detection") ||
+          pathname.startsWith("/api/matching") ||
+          pathname.startsWith("/api/upload") ||
           pathname.startsWith("/public/") ||
           pathname.includes(".") || // Static files with extensions
           pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|webp|css|js|mp4|txt|json)$/)

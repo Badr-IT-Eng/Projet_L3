@@ -9,7 +9,9 @@ import {
   AlertCircle, 
   CheckCircle2, 
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Camera,
+  Video
 } from 'lucide-react';
 import { useAuthenticatedApi } from "@/hooks/use-api";
 
@@ -101,6 +103,18 @@ export default function AdminDashboard() {
             <Button variant="outline">
               <Package className="w-4 h-4 mr-2" />
               Manage Objects
+            </Button>
+          </Link>
+          <Link href="/admin/cameras">
+            <Button variant="outline">
+              <Camera className="w-4 h-4 mr-2" />
+              Manage Cameras
+            </Button>
+          </Link>
+          <Link href="/admin/detection">
+            <Button variant="outline">
+              <Video className="w-4 h-4 mr-2" />
+              Video Detection
             </Button>
           </Link>
         </div>

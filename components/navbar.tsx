@@ -15,11 +15,9 @@ import { Logo } from "@/components/ui/logo"
 
 const mainNavItems = [
   { title: "Home", href: "/" },
-  { title: "Lost Items", href: "/lost-objects" },
-  { title: "Report Item", href: "/report" },
-  { title: "Find Item", href: "/search", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
-  { title: "AI Matching", href: "/matching" },
-  { title: "Detection", href: "/detection" },
+  { title: "Lost Items", href: "/lost-items" },
+  { title: "Report Lost Item", href: "/report" },
+  { title: "Find Items", href: "/search", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
   { title: "Map", href: "/map" },
 ]
 

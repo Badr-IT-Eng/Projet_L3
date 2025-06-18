@@ -115,6 +115,14 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/files/upload").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/files/detection/upload").permitAll()
                 
+                // Detection endpoints - allow detection service access
+                .requestMatchers("/api/detection/health").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/detection/process").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/detection/sessions/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/detection/stats").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/detection/recent").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/detection/abandoned").permitAll()
+                
                 // Health checks
                 .requestMatchers("/api/health/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()

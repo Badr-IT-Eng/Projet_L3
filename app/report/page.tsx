@@ -172,9 +172,9 @@ export default function ReportPage() {
     <PageContainer>
       <div className="max-w-2xl mx-auto">
         <div className="flex flex-col space-y-2 mb-6">
-          <h1 className="text-3xl font-bold">Report a Found Item</h1>
+          <h1 className="text-3xl font-bold">Report a Lost Item</h1>
           <p className="text-muted-foreground">
-            Fill out the form below with details about the item you found
+            Fill out the form below with details about the item you lost
           </p>
         </div>
 
@@ -190,7 +190,7 @@ export default function ReportPage() {
           <CardHeader>
             <CardTitle>Item Details</CardTitle>
             <CardDescription>
-              Provide as much information as possible to help someone find their lost item
+              Provide as much information as possible to help people find your lost item
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -253,7 +253,7 @@ export default function ReportPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Date Found</Label>
+                    <Label>Date Lost</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -291,7 +291,7 @@ export default function ReportPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Found Location</Label>
+                  <Label htmlFor="location">Last Known Location</Label>
                   <div className="flex space-x-2">
                     <Input
                       id="location"

@@ -1,157 +1,164 @@
-# Guide d'Authentification RecovR
+# Lost & Found System Authentication Guide
 
-## 🔐 Système d'Authentification Complet
+## 🔐 Complete Authentication System
 
-Cette application utilise **NextAuth.js** pour l'authentification frontend et **Spring Security** avec **JWT** pour l'authentification backend.
+This application uses **NextAuth.js** for frontend authentication and **Spring Security** with **JWT** for backend authentication.
 
-## 🚀 Démarrage Rapide
+## 🚀 Quick Start
 
 ```bash
-# Démarrer l'application complète
+# Start the complete application
 ./start_app.sh
 
-# Arrêter l'application
+# Stop the application
 ./stop_app.sh
 ```
 
-## 👥 Comptes Par Défaut
+## 👥 User Accounts
 
-### Administrateur
-- **URL**: http://localhost:3000/admin/login
-- **Username**: `admin`
-- **Password**: `admin123`
-- **Accès**: Panel d'administration complet
-
-### Utilisateur Normal
+### Normal User
 - **URL**: http://localhost:3000/auth/signin
-- **Créer un compte**: http://localhost:3000/auth/register
+- **Register**: http://localhost:3000/auth/register
 
-## 🔧 Architecture d'Authentification
+### Creating an Admin User
+1. Register a regular user at http://localhost:3000/auth/register
+2. Contact system administrator to upgrade your account to admin role
+3. Access admin panel at http://localhost:3000/admin
+
+### Test Users
+You can create test users:
+- Username: `testuser`, Password: `password123` (regular user)
+- Username: `admin`, Password: `admin123` (needs admin role assignment)
+
+## 🔧 Authentication Architecture
 
 ### Frontend (Next.js + NextAuth)
-- **NextAuth.js** pour la gestion des sessions
-- **Middleware** pour la protection des routes
-- **Hooks personnalisés** pour l'authentification
+- **NextAuth.js** for session management
+- **Middleware** for route protection
+- **Custom hooks** for authentication
 
 ### Backend (Spring Boot + JWT)
-- **Spring Security** pour l'authentification
-- **JWT tokens** pour l'autorisation
-- **Rôles**: ROLE_USER, ROLE_ADMIN
+- **Spring Security** for authentication
+- **JWT tokens** for authorization
+- **Roles**: ROLE_USER, ROLE_ADMIN
 
-## 📱 Fonctionnalités
+## 📱 Features
 
-### ✅ Authentification
-- [x] Login utilisateur
-- [x] Login administrateur séparé
-- [x] Inscription utilisateur
-- [x] Protection des routes par middleware
-- [x] Gestion des rôles (USER/ADMIN)
-- [x] Sessions persistantes
+### ✅ Authentication
+- [x] User login
+- [x] User registration
+- [x] Route protection via middleware
+- [x] Role management (USER/ADMIN)
+- [x] Persistent sessions
 
-### ✅ Sécurité
-- [x] Mots de passe hashés (BCrypt)
-- [x] JWT tokens sécurisés
-- [x] Validation côté client et serveur
-- [x] Protection CSRF
-- [x] Validation des rôles
+### ✅ Security
+- [x] Hashed passwords (BCrypt)
+- [x] Secure JWT tokens
+- [x] Client and server validation
+- [x] CSRF protection
+- [x] Role validation
 
-## 🛣️ Routes Protégées
+## 🛣️ Protected Routes
 
-### Publiques
-- `/` - Page d'accueil
-- `/auth/signin` - Connexion utilisateur
-- `/auth/register` - Inscription
-- `/admin/login` - Connexion admin
+### Public
+- `/` - Home page
+- `/lost-items` - Browse lost items
+- `/found-objects` - Browse found objects  
+- `/search` - Search items
+- `/auth/signin` - User login
+- `/auth/register` - User registration
 
-### Utilisateur Authentifié
-- `/dashboard` - Dashboard utilisateur
-- `/profile` - Profil utilisateur
+### Authenticated User
+- `/dashboard` - User dashboard
+- `/report` - Report lost items
 
-### Administrateur Seulement
-- `/admin/*` - Panel d'administration
-- `/admin/users` - Gestion des utilisateurs
-- `/admin/objects` - Gestion des objets
+### Admin Only
+- `/admin/*` - Administration panel
+- `/admin/users` - User management
+- `/admin/objects` - Object management
 
 ## 🔧 API Endpoints
 
-### Authentification
-- `POST /api/auth/signin` - Connexion
-- `POST /api/auth/signup` - Inscription
-- `GET /api/auth/me` - Informations utilisateur courant
+### Authentication
+- `POST /api/auth/signin` - Login
+- `POST /api/auth/signup` - Registration
+- `GET /api/auth/me` - Current user info
 
-### Protégées (JWT requis)
-- `GET /api/user/profile` - Profil utilisateur
-- `PUT /api/user/profile` - Mise à jour profil
+### Protected (JWT required)
+- `GET /api/lost-objects` - Get lost/found objects
+- `POST /api/lost-objects` - Report lost/found object
+- `GET /api/user/profile` - User profile
+- `PUT /api/user/profile` - Update profile
 
-### Admin Seulement
-- `GET /api/admin/*` - Endpoints admin
+### Admin Only
+- `GET /api/admin/*` - Admin endpoints
 
-## 💻 Utilisation des Hooks
+## 💻 Using Authentication Hooks
 
 ```tsx
-import { useAuth, useRequireAuth, useRequireAdmin } from '@/hooks/use-auth'
+import { useSession } from 'next-auth/react'
 
-// Hook basique
-const { user, isAuthenticated, isAdmin, isLoading } = useAuth()
+// Basic usage
+const { data: session, status } = useSession()
 
-// Forcer l'authentification
-const auth = useRequireAuth()
+// Check if user is authenticated
+const isAuthenticated = status === "authenticated"
 
-// Forcer l'authentification admin
-const adminAuth = useRequireAdmin()
+// Check if user is admin
+const isAdmin = session?.user?.role === "ROLE_ADMIN"
 ```
 
-## 🎨 Composants d'Authentification
+## 🎨 Authentication Components
 
 ### AuthForm
 ```tsx
 import { AuthForm } from '@/components/auth/auth-form'
 
-// Page de connexion
+// Login page
 <AuthForm type="signin" />
 
-// Page d'inscription  
+// Registration page
 <AuthForm type="register" />
 ```
 
-## 🔍 Dépannage
+## 🔍 Troubleshooting
 
-### Problèmes Courants
+### Common Issues
 
-1. **JWT Token invalide**
-   - Vérifier que le backend Spring Boot est démarré
-   - Vérifier la configuration CORS
+1. **Invalid JWT Token**
+   - Check that Spring Boot backend is running
+   - Check CORS configuration
 
-2. **Session non persistante**
-   - Vérifier NEXTAUTH_SECRET dans .env
-   - Vérifier la configuration des cookies
+2. **Session not persistent**
+   - Check NEXTAUTH_SECRET in .env
+   - Check cookie configuration
 
-3. **Redirection incorrecte**
-   - Vérifier la logique de rôles dans le middleware
-   - Vérifier les callbacks NextAuth
+3. **Incorrect redirect**
+   - Check role logic in middleware
+   - Check NextAuth callbacks
 
-### Logs Utiles
+### Useful Logs
 ```bash
 # Backend logs
-tail -f backend.log
+tail -f spring-backend/backend.log
 
 # Frontend logs  
-tail -f frontend.log
-
-# Logs de développement
 npm run dev
+
+# Check backend status
+curl http://localhost:8082/api/auth/signin
 ```
 
-## 🔄 Flow d'Authentification
+## 🔄 Authentication Flow
 
-1. **Connexion utilisateur**:
+1. **User Login**:
    ```
    Frontend (NextAuth) → Backend (Spring) → JWT Token → Session
    ```
 
-2. **Protection des routes**:
+2. **Route Protection**:
    ```
-   Middleware → Vérification token → Autorisation/Redirection
+   Middleware → Token verification → Authorization/Redirect
    ```
 
 3. **API Calls**:
@@ -161,10 +168,11 @@ npm run dev
 
 ## 📝 Configuration
 
-### Variables d'Environnement (.env.local)
+### Environment Variables (.env.local)
 ```env
 NEXTAUTH_SECRET=your-secret-key
 NEXTAUTH_URL=http://localhost:3000
+BACKEND_URL=http://localhost:8082/api
 ```
 
 ### Spring Boot (application.properties)
@@ -173,11 +181,33 @@ jwt.secret=mySecretKey
 jwt.expirationMs=86400000
 ```
 
-## 🛡️ Sécurité Best Practices
+## 🛡️ Security Best Practices
 
-- ✅ Mots de passe hashés avec BCrypt
-- ✅ JWT tokens avec expiration
-- ✅ Validation côté client et serveur
-- ✅ Protection CSRF activée
-- ✅ CORS configuré correctement
-- ✅ Rôles et permissions granulaires
+- ✅ Passwords hashed with BCrypt
+- ✅ JWT tokens with expiration
+- ✅ Client and server validation
+- ✅ CSRF protection enabled
+- ✅ CORS configured correctly
+- ✅ Granular roles and permissions
+
+## 🚀 Getting Started
+
+1. **Start the backend**:
+   ```bash
+   cd spring-backend
+   ./mvnw spring-boot:run
+   ```
+
+2. **Start the frontend**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Create a user account**:
+   - Go to http://localhost:3000/auth/register
+   - Fill in the registration form
+
+4. **Access admin panel**:
+   - Register as admin user
+   - Contact system admin for role upgrade
+   - Access http://localhost:3000/admin

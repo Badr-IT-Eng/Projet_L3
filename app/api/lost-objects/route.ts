@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from "@/lib/mongodb"
-import LostObject from "@/lib/models/LostObject"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
@@ -16,6 +14,7 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
+    const status = searchParams.get('status');
     const page = searchParams.get('page') || '0';
     const size = searchParams.get('size') || '10';
     
@@ -26,6 +25,7 @@ export async function GET(request: NextRequest) {
     if (location) url += `&location=${encodeURIComponent(location)}`;
     if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
     if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
 
     console.log(`Fetching from backend URL: ${url}`);
     
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         location: item.location || 'Unknown Location',
         date: item.dateFound || item.reportedAt || new Date().toISOString().split('T')[0],
         time: item.dateFound ? new Date(item.dateFound).toLocaleTimeString() : new Date().toLocaleTimeString(),
-        image: item.imageUrl || '/placeholder.svg',
+        image: item.imageUrl && item.imageUrl !== 'test.jpg' && !item.imageUrl.startsWith('http') ? `/placeholder.svg` : (item.imageUrl === 'test.jpg' ? '/placeholder.svg' : item.imageUrl || '/placeholder.svg'),
         category: item.category?.toLowerCase() || 'other',
         description: item.description || 'No description available',
         status: item.status?.toLowerCase() || 'found'
@@ -79,34 +79,12 @@ export async function GET(request: NextRequest) {
 // POST /api/lost-objects
 export async function POST(request: Request) {
   try {
-    await connectToDatabase()
-    
     // Get session or use mock user if session is not available
     let session = null
     try {
       session = await getServerSession(authOptions)
     } catch (err) {
       console.warn("Session error:", err)
-    }
-    
-    // Create a mock session for development if needed
-    if (!session && process.env.NODE_ENV === 'development') {
-      console.warn("Using mock session for development")
-      session = {
-        user: {
-          id: 'mock-user-id',
-          email: 'mock@example.com',
-          name: 'Mock User'
-        }
-      }
-    }
-    
-    // Check authentication in production
-    if (!session && process.env.NODE_ENV === 'production') {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      )
     }
     
     const data = await request.json()
@@ -119,37 +97,54 @@ export async function POST(request: Request) {
       )
     }
 
-    let newObject
-    try {
-      // Create new object with user reference
-      newObject = await LostObject.create({
-        ...data,
-        reporter: session?.user?.id || 'anonymous',
-        date: data.date || new Date(),
-        time: data.time || new Date().toTimeString().split(" ")[0].substring(0, 5),
-        status: "found"
-      })
-    } catch (err) {
-      console.warn("Error creating document in database:", err)
-      
-      // Create a mock response for development
-      if (process.env.NODE_ENV === 'development') {
-        newObject = {
-          _id: `mock-${Date.now()}`,
-          ...data,
-          reporter: session?.user?.id || 'anonymous',
-          date: data.date || new Date(),
-          time: data.time || new Date().toTimeString().split(" ")[0].substring(0, 5),
-          status: "found",
-          createdAt: new Date()
-        }
-      } else {
-        throw err
-      }
+    // Map frontend categories to backend categories
+    const categoryMapping: { [key: string]: string } = {
+      'other': 'MISCELLANEOUS',
+      'electronics': 'ELECTRONICS',
+      'clothing': 'CLOTHING',
+      'accessories': 'ACCESSORIES',
+      'documents': 'DOCUMENTS',
+      'keys': 'KEYS',
+      'bags': 'BAGS',
+      'jewelry': 'JEWELRY',
+      'toys': 'TOYS',
+      'books': 'BOOKS',
+      'miscellaneous': 'MISCELLANEOUS'
     }
 
+    // Prepare data for Spring Boot backend
+    const itemData = {
+      name: data.name,
+      description: data.description || '',
+      type: 'LOST', // Items reported through this form are lost items
+      category: categoryMapping[data.category.toLowerCase()] || 'MISCELLANEOUS',
+      status: 'LOST',
+      location: data.location,
+      imageUrl: data.image,
+      dateLost: data.date ? `${data.date}T${data.time || '10:00'}:00` : new Date().toISOString(),
+      latitude: data.coordinates?.lat || null,
+      longitude: data.coordinates?.lng || null
+    }
+
+    // Send to Spring Boot backend
+    const backendResponse = await fetch(`${BACKEND_URL}/items`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {})
+      },
+      body: JSON.stringify(itemData)
+    })
+
+    if (!backendResponse.ok) {
+      const errorData = await backendResponse.json().catch(() => ({}))
+      throw new Error(errorData.message || `Backend responded with status: ${backendResponse.status}`)
+    }
+
+    const savedItem = await backendResponse.json()
+
     return NextResponse.json(
-      { message: "Object reported successfully", object: newObject },
+      { message: "Item reported successfully", object: savedItem },
       { status: 201 }
     )
   } catch (error) {

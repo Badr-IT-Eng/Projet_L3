@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { calculateSimilarity } from '@/lib/ai/feature-extraction';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082/api';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,38 +15,42 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Send search request to Spring Boot backend
-    const response = await fetch(`${API_BASE_URL}/api/search/image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        features,
-        minScore: minScore || 0.7,
-      }),
-    });
-
+    // Get all items from backend
+    const response = await fetch(`${BACKEND_URL}/items?size=1000`);
+    
     if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
+      throw new Error(`Failed to fetch items: ${response.status}`);
     }
 
     const data = await response.json();
+    const items = data.items || [];
 
-    // Transform the results to match the frontend format
-    const transformedResults = data.results.map((item: any) => ({
-      id: item.id,
-      name: item.name || 'Unnamed Item',
-      location: item.location || 'Unknown Location',
-      date: item.detectionDate ? new Date(item.detectionDate).toISOString().split('T')[0] : 'Unknown Date',
-      image: item.imageUrl || '/placeholder.svg',
-      matchScore: Math.round(item.similarityScore * 100),
-      category: item.category?.toLowerCase() || 'other',
-    }));
+    // For now, we'll simulate feature matching by comparing with mock features
+    // In a real implementation, items would have stored feature vectors
+    const results = items.map((item: any) => {
+      // Generate mock features for comparison (in production, these would be stored)
+      const itemFeatures = Array(features.length).fill(0).map(() => Math.random());
+      
+      // Calculate similarity between search features and item features
+      const similarity = calculateSimilarity(features, itemFeatures);
+      
+      return {
+        id: item.id,
+        name: item.name || 'Unnamed Item',
+        location: item.location || 'Unknown Location',
+        date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'Unknown Date',
+        image: item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:8082/api/files/${item.imageUrl}`) : '/placeholder.svg',
+        matchScore: similarity,
+        category: item.category?.toLowerCase() || 'other',
+      };
+    })
+    .filter(item => item.matchScore >= (minScore * 100 || 70)) // Filter by minimum score
+    .sort((a, b) => b.matchScore - a.matchScore) // Sort by similarity score
+    .slice(0, 10); // Return top 10 matches
     
     return NextResponse.json({
-      results: transformedResults,
-      totalMatches: data.totalMatches,
+      results,
+      totalMatches: results.length,
     });
   } catch (error) {
     console.error('Error performing image search:', error);

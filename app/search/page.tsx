@@ -22,15 +22,41 @@ interface SearchResult {
 }
 
 export default function SearchPage() {
-  const [searchMethod, setSearchMethod] = useState<"image" | "location">("location")
+  const [searchMethod, setSearchMethod] = useState<"image" | "location" | "text">("text")
+  const [searchQuery, setSearchQuery] = useState("")
   const [location, setLocation] = useState("")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
+
+  const categories = [
+    { value: "all", label: "All Categories" },
+    { value: "ELECTRONICS", label: "Electronics" },
+    { value: "BAGS", label: "Bags & Backpacks" },
+    { value: "JEWELRY", label: "Jewelry" },
+    { value: "KEYS", label: "Keys" },
+    { value: "DOCUMENTS", label: "Documents" },
+    { value: "BOOKS", label: "Books" },
+    { value: "ACCESSORIES", label: "Accessories" },
+    { value: "OTHER", label: "Other" },
+  ]
+
+  const locations = [
+    { value: "all", label: "All Locations" },
+    { value: "Main Library", label: "Main Library" },
+    { value: "Student Center", label: "Student Center" },
+    { value: "Cafeteria", label: "Cafeteria" },
+    { value: "Gym", label: "Gym" },
+    { value: "Parking Lot", label: "Parking Lot" },
+    { value: "Main Entrance", label: "Main Entrance" },
+    { value: "Lecture Halls", label: "Lecture Halls" },
+  ]
   
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -53,15 +79,23 @@ export default function SearchPage() {
     multiple: false
   })
 
-  const handleLocationSearch = async () => {
-    if (!location.trim() && !dateFrom && !dateTo) return
+  const handleTextSearch = async () => {
+    if (!searchQuery.trim() && selectedCategory === "all" && !location && !dateFrom && !dateTo) return
 
     setLoading(true)
     setError(null)
 
     try {
       const params = new URLSearchParams()
-      if (location.trim()) params.append('location', location)
+      if (searchQuery.trim()) {
+        params.append('query', searchQuery)
+        // Add to search history
+        if (!searchHistory.includes(searchQuery.trim())) {
+          setSearchHistory(prev => [searchQuery.trim(), ...prev.slice(0, 4)])
+        }
+      }
+      if (selectedCategory !== "all") params.append('category', selectedCategory)
+      if (location && location !== "all") params.append('location', location)
       if (dateFrom) params.append('dateFrom', dateFrom)
       if (dateTo) params.append('dateTo', dateTo)
       
@@ -78,7 +112,7 @@ export default function SearchPage() {
         location: item.location,
         date: item.date,
         image: item.image,
-        matchScore: 100, // Location search doesn't have match scores
+        matchScore: 100, // Text search doesn't have match scores
         category: item.category
       })))
     } catch (err) {
@@ -96,7 +130,7 @@ export default function SearchPage() {
     setError(null)
 
     try {
-      // First, get image features using the detection service
+      // First, extract image features using AI
       const formData = new FormData()
       formData.append("image", uploadedImage)
 
@@ -111,7 +145,7 @@ export default function SearchPage() {
       
       const { features } = await featuresResponse.json()
 
-      // Then, search using the features
+      // Then, search using the AI-extracted features
       const searchResponse = await fetch("/api/search/image", {
         method: "POST",
         headers: {
@@ -147,86 +181,207 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Rechercher un objet perdu</h1>
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground mb-2">Find Your Lost Item</h1>
+        <p className="text-lg text-muted-foreground">
+          Search for items using text, location filters, date ranges, or AI-powered image matching
+        </p>
+      </div>
 
-        <Tabs defaultValue="location" value={searchMethod} onValueChange={(v) => setSearchMethod(v as "image" | "location")}>
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="location">Recherche par lieu et date</TabsTrigger>
-            <TabsTrigger value="image">Recherche par image</TabsTrigger>
+      <Tabs defaultValue="text" value={searchMethod} onValueChange={(v) => setSearchMethod(v as "image" | "location" | "text")}>
+        <TabsList className="grid w-full grid-cols-3 mb-8 max-w-md">
+          <TabsTrigger value="text" className="flex items-center gap-2">
+            <SearchIcon className="h-4 w-4" />
+            Text Search
+          </TabsTrigger>
+          <TabsTrigger value="location" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Location
+          </TabsTrigger>
+          <TabsTrigger value="image" className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Photo
+          </TabsTrigger>
         </TabsList>
 
-          <TabsContent value="location">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <MapPin className="h-5 w-5 inline mr-2" />
-                  Recherche par lieu et date
-                </CardTitle>
-                <CardDescription>
-                  Filtrez les objets par lieu et/ou période de temps
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="location">Lieu</Label>
-                    <Input
-                      id="location"
-                      placeholder="Ex: Bibliothèque, Cafétéria, Salle 101..."
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="dateFrom">
-                        <Calendar className="h-4 w-4 inline mr-1" />
-                        Date de début
-                      </Label>
-                      <Input
-                        id="dateFrom"
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dateTo">
-                        <Calendar className="h-4 w-4 inline mr-1" />
-                        Date de fin
-                      </Label>
-                      <Input
-                        id="dateTo"
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleLocationSearch} disabled={loading} className="w-full">
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <SearchIcon className="h-4 w-4" />
-                    )}
-                    <span className="ml-2">Rechercher</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-        </TabsContent>
-        
-          <TabsContent value="image">
+        <TabsContent value="text">
           <Card>
             <CardHeader>
-                <CardTitle>Recherche par image</CardTitle>
-                <CardDescription>
-                  Téléchargez une photo de l'objet que vous recherchez
-                </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <SearchIcon className="h-5 w-5" />
+                Text Search
+              </CardTitle>
+              <CardDescription>
+                Search for items by name, description, category, or location
+              </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="search">Search Query</Label>
+                  <Input
+                    id="search"
+                    placeholder="Search for backpack, iPhone, keys, etc..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleTextSearch()}
+                  />
+                  {searchHistory.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Label className="text-xs text-muted-foreground">Recent searches:</Label>
+                      {searchHistory.map((term, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="cursor-pointer text-xs"
+                          onClick={() => setSearchQuery(term)}
+                        >
+                          {term}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <select
+                      id="category"
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="location-filter">Location</Label>
+                    <select
+                      id="location-filter"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      {locations.map((loc) => (
+                        <option key={loc.value} value={loc.value}>
+                          {loc.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-end">
+                    <Button onClick={handleTextSearch} disabled={loading} className="w-full">
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <SearchIcon className="h-4 w-4 mr-2" />
+                      )}
+                      Search
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="dateFrom">From Date</Label>
+                    <Input
+                      id="dateFrom"
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dateTo">To Date</Label>
+                    <Input
+                      id="dateTo"
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="location">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Location & Date Search
+              </CardTitle>
+              <CardDescription>
+                Filter items by specific location and time period
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="location-specific">Specific Location</Label>
+                  <Input
+                    id="location-specific"
+                    placeholder="Library, Cafeteria, Room 101..."
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="dateFrom-loc">From Date</Label>
+                    <Input
+                      id="dateFrom-loc"
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dateTo-loc">To Date</Label>
+                    <Input
+                      id="dateTo-loc"
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleTextSearch} disabled={loading} className="w-full">
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <SearchIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Search by Location & Date
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="image">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                AI Image Search
+              </CardTitle>
+              <CardDescription>
+                Upload a photo to find visually similar items using AI-powered matching
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div
                   {...getRootProps()}
                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -235,8 +390,8 @@ export default function SearchPage() {
                 >
                   <input {...getInputProps()} />
                   {imagePreview ? (
-                <div className="space-y-4">
-                      <div className="relative h-48 w-full">
+                    <div className="space-y-4">
+                      <div className="relative h-48 w-full max-w-sm mx-auto">
                         <Image
                           src={imagePreview}
                           alt="Preview"
@@ -244,14 +399,28 @@ export default function SearchPage() {
                           className="object-contain rounded-lg"
                         />
                       </div>
-                      <Button onClick={handleImageSearch} disabled={loading}>
-                        {loading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <SearchIcon className="h-4 w-4" />
-                        )}
-                        <span className="ml-2">Rechercher</span>
-                      </Button>
+                      <p className="text-sm text-muted-foreground">
+                        Image uploaded successfully. Click search to find similar items.
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Button onClick={handleImageSearch} disabled={loading}>
+                          {loading ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <SearchIcon className="h-4 w-4 mr-2" />
+                          )}
+                          Search Similar Items
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setImagePreview(null)
+                            setUploadedImage(null)
+                          }}
+                        >
+                          Remove Image
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -260,74 +429,115 @@ export default function SearchPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium">
-                          Glissez-déposez une image ici, ou cliquez pour sélectionner
+                          Drag and drop an image here, or click to select
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Formats acceptés: JPG, JPEG, PNG
+                          Supported formats: JPG, JPEG, PNG (max 10MB)
                         </p>
-                  </div>
-                  </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Our AI will analyze your image and find visually similar items
+                        </p>
+                      </div>
+                    </div>
                   )}
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+      {error && (
+        <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600 flex items-center gap-2">
+            <SearchIcon className="h-4 w-4" />
+            {error}
+          </p>
+        </div>
+      )}
 
-        {results.length > 0 && (
-              <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">
-              Résultats de la recherche ({results.length})
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {results.map((result) => (
-                <Card key={result.id}>
-                  <div className="relative h-48 w-full">
-                              <Image
-                      src={result.image}
-                                alt={result.name}
-                                fill
-                      className="object-cover rounded-t-lg"
-                              />
-                    {result.matchScore && (
-                      <Badge
-                        variant="secondary"
-                        className="absolute top-2 right-2"
-                      >
-                        {Math.round(result.matchScore * 100)}% match
-                      </Badge>
-                    )}
-                            </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold">{result.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {result.location}
-                                </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(result.date)}
-                          </p>
-                    <Badge variant="outline" className="mt-2">
-                      {result.category}
+      {results.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+            <SearchIcon className="h-6 w-6" />
+            Search Results ({results.length} items found)
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {results.map((result) => (
+              <Card key={result.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative h-48 w-full">
+                  <Image
+                    src={result.image}
+                    alt={result.name}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = "/placeholder.svg"
+                    }}
+                  />
+                  {result.matchScore && result.matchScore < 100 && (
+                    <Badge
+                      variant="secondary"
+                      className="absolute top-2 right-2 bg-white/90"
+                    >
+                      {Math.round(result.matchScore * 100)}% match
                     </Badge>
-                  </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-          </div>
-        )}
-
-        {!loading && results.length === 0 && (location || dateFrom || dateTo) && (
-          <div className="mt-8 text-center text-muted-foreground">
-            Aucun résultat trouvé pour votre recherche
+                  )}
+                  <Badge
+                    className="absolute top-2 left-2 bg-white/90 text-gray-800"
+                  >
+                    {result.category}
+                  </Badge>
                 </div>
-              )}
-      </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-2">{result.name}</h3>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      <span>{result.location}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{formatDate(result.date)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button size="sm" className="flex-1">
+                      View Details
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      Contact
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && results.length === 0 && (searchQuery || location || dateFrom || dateTo || uploadedImage) && (
+        <div className="mt-8 text-center py-12">
+          <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Items Found</h3>
+          <p className="text-muted-foreground mb-4">
+            Try adjusting your search criteria or using different keywords
+          </p>
+          <Button variant="outline" onClick={() => {
+            setSearchQuery("")
+            setLocation("")
+            setDateFrom("")
+            setDateTo("")
+            setSelectedCategory("all")
+            setImagePreview(null)
+            setUploadedImage(null)
+            setResults([])
+          }}>
+            Clear Search
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
