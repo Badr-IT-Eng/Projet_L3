@@ -55,6 +55,11 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public RateLimitingFilter rateLimitingFilter() {
+        return new RateLimitingFilter();
+    }
+
+    @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
@@ -99,29 +104,30 @@ public class WebSecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll()
                 
-                // Public read access to items
+                // Public read access to items (limited)
                 .requestMatchers(HttpMethod.GET, "/api/items/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items/public/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/items/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/items").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/items/search").permitAll()
                 
-                // Allow object detection service to create items without auth
-                .requestMatchers(HttpMethod.POST, "/api/items").permitAll()
+                // Item CRUD - require authentication
+                .requestMatchers(HttpMethod.GET, "/api/items/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/items").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/items").authenticated()
                 
-                // File access - allow public read for images
-                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                // File access - allow public read for images only
+                .requestMatchers(HttpMethod.GET, "/api/files/public/**").permitAll()
                 
-                // Allow object detection service to upload files without auth
-                .requestMatchers(HttpMethod.POST, "/api/files/upload").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/files/detection/upload").permitAll()
+                // File upload - require authentication
+                .requestMatchers(HttpMethod.POST, "/api/files/upload").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/files/detection/upload").hasRole("ADMIN")
                 
-                // Detection endpoints - allow detection service access
+                // Detection endpoints - more secure
                 .requestMatchers("/api/detection/health").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/detection/process").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/detection/sessions/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/detection/stats").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/detection/recent").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/detection/abandoned").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/detection/process").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/detection/sessions/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/detection/stats").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/detection/recent").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/detection/abandoned").authenticated()
                 
                 // Health checks
                 .requestMatchers("/api/health/**").permitAll()
@@ -157,9 +163,12 @@ public class WebSecurityConfig {
             );
 
         // For H2 Console (development only)
-        http.headers(headers -> headers.frameOptions().sameOrigin());
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
         http.authenticationProvider(authenticationProvider());
+        
+        // Add filters in correct order
+        http.addFilterBefore(rateLimitingFilter(), UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

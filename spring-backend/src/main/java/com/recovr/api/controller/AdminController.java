@@ -4,11 +4,13 @@ import com.recovr.api.dto.AdminDashboardDto;
 import com.recovr.api.dto.ItemDto;
 import com.recovr.api.dto.UserDto;
 import com.recovr.api.service.AdminService;
+import com.recovr.api.service.DetectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+    
+    @Autowired
+    private DetectionService detectionService;
 
     @GetMapping("/dashboard")
     @Operation(summary = "Get admin dashboard statistics", description = "Returns statistics for the admin dashboard.")
@@ -75,5 +80,18 @@ public class AdminController {
     public ResponseEntity<UserDto> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> roleRequest) {
         UserDto updated = adminService.updateUserRole(id, roleRequest.get("role"));
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/detection/strict")
+    @Operation(summary = "Process video with strict detection", 
+               description = "Upload a video to detect main objects only (filters out small parts like handles, zippers)")
+    public ResponseEntity<Map<String, Object>> processVideoStrict(@RequestParam("video") MultipartFile videoFile) {
+        try {
+            Map<String, Object> result = detectionService.processVideoWithStrictDetectionAndSave(videoFile);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("success", false, "error", e.getMessage()));
+        }
     }
 }

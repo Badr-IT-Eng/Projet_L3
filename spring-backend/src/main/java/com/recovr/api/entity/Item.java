@@ -38,7 +38,7 @@ public class Item {
     @Column(nullable = false)
     private String location;
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private String imageUrl;
 
     @ManyToOne

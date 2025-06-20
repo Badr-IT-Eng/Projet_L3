@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/a
 // PUT /api/admin/items/[id] (pour valider ou mettre à jour un objet)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier la session ou authentification
@@ -21,7 +21,8 @@ export async function PUT(
       );
     }
     
-    const id = params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     const data = await request.json();
     const { status } = data;
 
@@ -83,7 +84,7 @@ export async function PUT(
 // DELETE /api/admin/items/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier la session ou authentification
@@ -97,7 +98,8 @@ export async function DELETE(
       );
     }
     
-    const id = params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     
     if (!id) {
       return NextResponse.json(

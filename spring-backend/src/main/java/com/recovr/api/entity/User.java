@@ -50,7 +50,7 @@ public class User {
 
     private String phone;
 
-    @Column(name = "avatar_url")
+    @Column(name = "avatar_url", columnDefinition = "LONGTEXT")
     private String avatarUrl;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -64,6 +64,12 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    @Column(name = "enabled")
+    private boolean enabled = true;
 
     @PrePersist
     protected void onCreate() {

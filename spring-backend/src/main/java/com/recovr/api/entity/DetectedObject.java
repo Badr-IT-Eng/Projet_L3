@@ -62,7 +62,7 @@ public class DetectedObject {
     private Integer boundingBoxHeight;
 
     // Image data
-    @Column(name = "snapshot_url")
+    @Column(name = "snapshot_url", columnDefinition = "LONGTEXT")
     private String snapshotUrl; // URL to the detection snapshot
 
     @Column(name = "frame_timestamp")

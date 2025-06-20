@@ -1,0 +1,25 @@
+{
+  "video_info": {
+    "path": "../copied_services/python-services/detection-service/output.mp4",
+    "processing_time": "2025-06-19T01:12:19.119418",
+    "method": "strict_suitcase_detection"
+  },
+  "detection_result": {
+    "suitcase_found": true,
+    "detection_method": "YOLO + Strict Filtering"
+  },
+  "suitcase": {
+    "category": "BAGS",
+    "confidence": "84.3%",
+    "score": "1.000",
+    "found_at_time": "00:00",
+    "frame_number": 10,
+    "bounding_box": [
+      0,
+      117,
+      466,
+      382
+    ],
+    "image_saved": "strict_suitcase_detection.jpg"
+  }
+}

@@ -19,7 +19,7 @@ public class SearchRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "search_image_url")
+    @Column(name = "search_image_url", columnDefinition = "LONGTEXT")
     private String searchImageUrl;
 
     @Column(length = 1000)

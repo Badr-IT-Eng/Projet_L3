@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "detection": {
+    "category": "BAGS",
+    "confidence": 0.894,
+    "confidence_percentage": "89.4%",
+    "position": {
+      "x": 46,
+      "y": 278,
+      "width": 72,
+      "height": 99
+    },
+    "timestamp": "00:00",
+    "frame_number": 20,
+    "image_path": "detections/best_detection.jpg",
+    "total_score": 0.747
+  },
+  "metadata": {
+    "method": "single_object_focused_detection",
+    "frames_analyzed": 4,
+    "video_path": "../copied_services/python-services/detection-service/output.mp4",
+    "processing_time": "2025-06-19T00:50:37.107546"
+  }
+}

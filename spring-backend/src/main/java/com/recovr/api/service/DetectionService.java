@@ -7,8 +7,14 @@ import com.recovr.api.repository.DetectionSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +31,7 @@ public class DetectionService {
 
     private final DetectedObjectRepository detectedObjectRepository;
     private final DetectionSessionRepository detectionSessionRepository;
+    private final RestTemplate restTemplate;
 
     @Value("${app.models.path:../}")
     private String modelsPath;
@@ -34,6 +41,9 @@ public class DetectionService {
 
     @Value("${app.detection.confidence-threshold:0.5}")
     private Double defaultConfidenceThreshold;
+    
+    @Value("${app.python.strict-detection-api:http://localhost:5002}")
+    private String strictDetectionApiUrl;
 
     /**
      * Start a new detection session for a camera
@@ -293,5 +303,197 @@ public class DetectionService {
         stats.put("hourlyTrends", hourlyTrends);
         
         return stats;
+    }
+
+    /**
+     * Process video using strict detection API
+     * Only detects main objects, filters out small parts like handles, zippers
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> processVideoWithStrictDetection(MultipartFile videoFile) {
+        try {
+            log.info("🎯 Processing video with strict detection: {}", videoFile.getOriginalFilename());
+            log.info("📊 Video file size: {} bytes", videoFile.getSize());
+            log.info("🌐 Strict detection API URL: {}", strictDetectionApiUrl);
+            
+            // Create temporary file
+            java.io.File tempFile = java.io.File.createTempFile("upload_", "_" + videoFile.getOriginalFilename());
+            log.info("📁 Created temp file: {}", tempFile.getAbsolutePath());
+            
+            videoFile.transferTo(tempFile);
+            log.info("✅ File transferred to temp location, size: {} bytes", tempFile.length());
+            
+            // Prepare multipart request
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("video", new FileSystemResource(tempFile));
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            
+            // Call strict detection API
+            String url = strictDetectionApiUrl + "/detect/strict";
+            log.info("📤 Calling Python API: {}", url);
+            
+            ResponseEntity<Map> response = restTemplate.exchange(
+                url, HttpMethod.POST, requestEntity, Map.class);
+            
+            log.info("📥 Python API response status: {}", response.getStatusCode());
+            log.info("📥 Python API response body: {}", response.getBody());
+            
+            // Cleanup temporary file
+            boolean deleted = tempFile.delete();
+            log.info("🗑️ Temp file deleted: {}", deleted);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> result = response.getBody();
+                log.info("✅ Strict detection completed successfully");
+                
+                // Process the results if objects were detected
+                if (result.containsKey("objects") && result.get("objects") instanceof List) {
+                    List<Map<String, Object>> objects = (List<Map<String, Object>>) result.get("objects");
+                    log.info("📦 Detected {} main object(s) (strict filtering)", objects.size());
+                }
+                
+                return result;
+            } else {
+                log.error("❌ Python API returned error status: {}", response.getStatusCode());
+                throw new RuntimeException("Strict detection API returned error: " + response.getStatusCode());
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Strict detection failed with exception: ", e);
+            throw new RuntimeException("Failed to process video with strict detection: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Process video using strict detection API and save results to database
+     */
+    @SuppressWarnings("unchecked")
+    @Transactional
+    public Map<String, Object> processVideoWithStrictDetectionAndSave(MultipartFile videoFile) {
+        try {
+            log.info("🎯 Processing video with strict detection and saving to database: {}", videoFile.getOriginalFilename());
+            
+            // First, process the video with the Python API
+            Map<String, Object> result = processVideoWithStrictDetection(videoFile);
+            
+            // Check if any objects were detected
+            if (result.containsKey("objects") && result.get("objects") instanceof List) {
+                List<Map<String, Object>> objects = (List<Map<String, Object>>) result.get("objects");
+                
+                if (!objects.isEmpty()) {
+                    // Create a detection session for this admin upload
+                    DetectionSession session = startDetectionSession(
+                        "admin-upload", 
+                        "Admin Video Upload", 
+                        "strict-detection-v1.0"
+                    );
+                    
+                    log.info("📝 Created detection session: {} for {} objects", session.getSessionId(), objects.size());
+                    
+                    // Save each detected object to the database
+                    for (Map<String, Object> obj : objects) {
+                        try {
+                            // Extract object data
+                            String trackingId = (String) obj.get("id");
+                            String categoryStr = (String) obj.get("category");
+                            Double confidence = ((Number) obj.get("confidence")).doubleValue();
+                            List<Integer> bbox = (List<Integer>) obj.get("bbox");
+                            
+                            // Map category string to ItemCategory enum
+                            ItemCategory category = mapStringToItemCategory(categoryStr);
+                            
+                            // Save to database
+                            DetectedObject detectedObject = processDetection(
+                                session.getSessionId(),
+                                trackingId,
+                                category,
+                                confidence,
+                                bbox.get(0), // x
+                                bbox.get(1), // y  
+                                bbox.get(2), // width
+                                bbox.get(3), // height
+                                (String) obj.get("cropped_image_url") // snapshot URL
+                            );
+                            
+                            log.info("💾 Saved detected object: {} - {} ({}% confidence)", 
+                                detectedObject.getId(), category, Math.round(confidence * 100));
+                            
+                        } catch (Exception e) {
+                            log.error("❌ Failed to save detected object: {}", e.getMessage());
+                        }
+                    }
+                    
+                    // Add database info to the result
+                    result.put("sessionId", session.getSessionId());
+                    result.put("savedToDatabase", true);
+                    result.put("detectionSessionId", session.getId());
+                    
+                } else {
+                    result.put("savedToDatabase", false);
+                    result.put("message", "No objects detected - nothing saved to database");
+                }
+            } else {
+                result.put("savedToDatabase", false);
+                result.put("message", "No detection results - nothing saved to database");
+            }
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("❌ Strict detection with save failed: ", e);
+            throw new RuntimeException("Failed to process and save video detection: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Map category string from Python API to ItemCategory enum
+     */
+    private ItemCategory mapStringToItemCategory(String categoryStr) {
+        if (categoryStr == null) return ItemCategory.MISCELLANEOUS;
+        
+        switch (categoryStr.toLowerCase()) {
+            case "bags":
+            case "bag":
+            case "suitcase":
+            case "luggage":
+            case "backpack":
+            case "handbag":
+                return ItemCategory.BAGS;
+            case "electronics":
+            case "phone":
+            case "laptop":
+            case "tablet":
+                return ItemCategory.ELECTRONICS;
+            case "clothing":
+            case "clothes":
+            case "jacket":
+            case "shirt":
+                return ItemCategory.CLOTHING;
+            case "accessories":
+            case "watch":
+            case "glasses":
+                return ItemCategory.ACCESSORIES;
+            case "jewelry":
+                return ItemCategory.JEWELRY;
+            case "documents":
+            case "papers":
+            case "passport":
+            case "wallet":
+                return ItemCategory.DOCUMENTS;
+            case "keys":
+                return ItemCategory.KEYS;
+            case "books":
+            case "book":
+                return ItemCategory.BOOKS;
+            case "toys":
+            case "toy":
+                return ItemCategory.TOYS;
+            default:
+                return ItemCategory.MISCELLANEOUS;
+        }
     }
 } 

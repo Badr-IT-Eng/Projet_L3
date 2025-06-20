@@ -70,9 +70,9 @@ export async function POST(request: Request) {
 
       if (data.description) {
         const keywords = data.description.toLowerCase().split(" ")
-        filteredObjects = filteredObjects.filter((obj) =>
+        filteredObjects = filteredObjects.filter((obj: any) =>
           keywords.some(
-            (keyword) => obj.name.toLowerCase().includes(keyword) || obj.description.toLowerCase().includes(keyword),
+            (keyword: any) => obj.name.toLowerCase().includes(keyword) || obj.description.toLowerCase().includes(keyword),
           ),
         )
       }

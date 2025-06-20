@@ -1,0 +1,33 @@
+{
+  "video_info": {
+    "path": "../copied_services/python-services/detection-service/output.mp4",
+    "processing_time": "2025-06-19T00:45:15.110744",
+    "method": "single_object_focused_detection"
+  },
+  "detection_result": {
+    "object_found": true,
+    "total_frames_analyzed": 4,
+    "detection_method": "Ultra-Enhanced Ensemble with Single-Object Focus"
+  },
+  "best_detection": {
+    "category": "BAGS",
+    "confidence": "89.4%",
+    "total_score": "0.747",
+    "found_at_time": "00:00",
+    "frame_number": 20,
+    "image_saved": "single_object_detection.jpg",
+    "bounding_box": [
+      46,
+      278,
+      72,
+      99
+    ]
+  },
+  "detection_analysis": {
+    "categories_detected": {
+      "BAGS": 4
+    },
+    "most_consistent_category": "BAGS",
+    "detection_stability": true
+  }
+}

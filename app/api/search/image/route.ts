@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
         category: item.category?.toLowerCase() || 'other',
       };
     })
-    .filter(item => item.matchScore >= (minScore * 100 || 70)) // Filter by minimum score
-    .sort((a, b) => b.matchScore - a.matchScore) // Sort by similarity score
+    .filter((item: any) => item.matchScore >= (minScore * 100 || 70)) // Filter by minimum score
+    .sort((a: any, b: any) => b.matchScore - a.matchScore) // Sort by similarity score
     .slice(0, 10); // Return top 10 matches
     
     return NextResponse.json({

@@ -65,20 +65,33 @@ export default function CameraManagementPage() {
   const [editingCamera, setEditingCamera] = useState<Camera | null>(null)
 
   // Camera form state
-  const [newCamera, setNewCamera] = useState({
+  const [newCamera, setNewCamera] = useState<{
+    name: string
+    location: string
+    ipAddress: string
+    port: number
+    type: 'ip' | 'usb' | 'rtsp'
+    detectionEnabled: boolean
+    recordingEnabled: boolean
+  }>({
     name: '',
     location: '',
     ipAddress: '',
     port: 8080,
-    type: 'ip' as const,
+    type: 'ip',
     detectionEnabled: true,
     recordingEnabled: false
   })
 
   // Video source form state
-  const [newVideoSource, setNewVideoSource] = useState({
+  const [newVideoSource, setNewVideoSource] = useState<{
+    name: string
+    type: 'upload' | 'url' | 'stream'
+    source: string
+    location: string
+  }>({
     name: '',
-    type: 'upload' as const,
+    type: 'upload',
     source: '',
     location: ''
   })
