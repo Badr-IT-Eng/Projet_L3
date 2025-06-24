@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label"
 import { Loader2, Upload, Search as SearchIcon, Image as ImageIcon, MapPin, Calendar } from "lucide-react"
 import Image from "next/image"
 import { useDropzone } from "react-dropzone"
+import { EnhancedSearchResults } from "@/components/enhanced-search-results"
 
 interface SearchResult {
-  id: string;
+  id: number;
   name: string;
   location: string;
   date: string;
@@ -34,6 +35,8 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const [searchQuality, setSearchQuality] = useState<string>('high')
+  const [topScore, setTopScore] = useState<number>(0)
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -163,6 +166,8 @@ export default function SearchPage() {
       
       const data = await searchResponse.json()
       setResults(data.results)
+      setSearchQuality(data.searchQuality || 'high')
+      setTopScore(data.topScore || 0)
     } catch (err) {
       console.error("Error searching with image:", err)
       setError("Failed to search with image. Please try again.")
@@ -456,95 +461,22 @@ export default function SearchPage() {
         </div>
       )}
 
-      {results.length > 0 && (
+      {/* Enhanced Search Results */}
+      {(results.length > 0 || (!loading && (searchQuery || location || dateFrom || dateTo || uploadedImage))) && (
         <div className="mt-8">
-          <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-            <SearchIcon className="h-6 w-6" />
-            Search Results ({results.length} items found)
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {results.map((result) => {
-              // Validate and sanitize image URL
-              const getValidImageUrl = (url: string) => {
-                if (!url) return "/placeholder.svg";
-                if (url === "/placeholder.svg") return url;
-                try {
-                  // Test if it's a valid URL
-                  new URL(url);
-                  return url;
-                } catch {
-                  // If not a valid URL, check if it's a relative path
-                  if (url.startsWith("/") || url.startsWith("http")) {
-                    return url;
-                  }
-                  return "/placeholder.svg";
-                }
-              };
-
-              const validImageUrl = getValidImageUrl(result.image);
-
-              return (
-                <Card key={result.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={validImageUrl}
-                      alt={result.name}
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.src = "/placeholder.svg"
-                      }}
-                    />
-                  {result.matchScore && result.matchScore < 100 && (
-                    <Badge
-                      variant="secondary"
-                      className="absolute top-2 right-2 bg-white/90"
-                    >
-                      {Math.round(result.matchScore * 100)}% match
-                    </Badge>
-                  )}
-                  <Badge
-                    className="absolute top-2 left-2 bg-white/90 text-gray-800"
-                  >
-                    {result.category}
-                  </Badge>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{result.name}</h3>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      <span>{result.location}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDate(result.date)}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button size="sm" className="flex-1">
-                      View Details
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      Contact
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              );
-            })}
-          </div>
+          <EnhancedSearchResults
+            results={results}
+            totalMatches={results.length}
+            searchQuality={searchQuality}
+            topScore={topScore}
+            isLoading={loading}
+          />
         </div>
       )}
 
+      {/* Clear Search Button */}
       {!loading && results.length === 0 && (searchQuery || location || dateFrom || dateTo || uploadedImage) && (
-        <div className="mt-8 text-center py-12">
-          <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Items Found</h3>
-          <p className="text-muted-foreground mb-4">
-            Try adjusting your search criteria or using different keywords
-          </p>
+        <div className="mt-8 text-center">
           <Button variant="outline" onClick={() => {
             setSearchQuery("")
             setLocation("")

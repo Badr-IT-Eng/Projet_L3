@@ -104,28 +104,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/lost-objects
+// POST /api/lost-objects - Simplified version based on working test
 export async function POST(request: Request) {
   try {
-    // Get session or use mock user if session is not available
-    let session = null
-    try {
-      session = await getServerSession(authOptions)
-    } catch (err) {
-      console.warn("Session error:", err)
+    const data = await request.json()
+    
+    // Simple validation
+    if (!data.name || !data.location || !data.category || !data.image) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
     
-    const data = await request.json()
-
-    // Validate required fields
-    if (!data.name || !data.location || !data.category || !data.image) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      )
-    }
-
-    // Map frontend categories to backend categories
+    // Category mapping
     const categoryMapping: { [key: string]: string } = {
       'other': 'MISCELLANEOUS',
       'electronics': 'ELECTRONICS',
@@ -140,59 +129,53 @@ export async function POST(request: Request) {
       'miscellaneous': 'MISCELLANEOUS'
     }
 
-    // Prepare data for Spring Boot backend
+    // Convert relative image URL to full URL for proper display
+    const imageUrl = data.image.startsWith('/') ? `http://localhost:3000${data.image}` : data.image;
+    
+    // Prepare data with enhanced features
     const itemData = {
       name: data.name,
       description: data.description || '',
-      type: 'LOST', // Items reported through this form are lost items (ItemType enum)
-      category: categoryMapping[data.category.toLowerCase()] || 'MISCELLANEOUS', // ItemCategory enum
-      status: 'LOST', // ItemStatus enum
+      type: 'LOST',
+      category: categoryMapping[data.category.toLowerCase()] || 'MISCELLANEOUS',
+      status: 'LOST',
       location: data.location,
-      imageUrl: data.image,
-      // Handle date properly - for lost items, set dateLost instead of dateFound
+      imageUrl: imageUrl,
       dateLost: data.date ? `${data.date}T${data.time || '10:00'}:00` : new Date().toISOString(),
-      dateFound: null, // Lost items don't have a found date
+      dateFound: null,
       latitude: data.coordinates?.lat || null,
       longitude: data.coordinates?.lng || null
     }
-
-    console.log('📤 Sending to backend:', JSON.stringify(itemData, null, 2))
     
-    // Send to Spring Boot backend
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    const url = `${BACKEND_URL}/items`;
-    console.log('🔗 Backend URL:', url);
-    
-    const backendResponse = await fetch(url, {
+    // Call backend exactly like the working test
+    const response = await fetch('http://localhost:8082/api/items', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(itemData)
     })
-
-    console.log('📥 Backend response status:', backendResponse.status)
-
-    if (!backendResponse.ok) {
-      const errorText = await backendResponse.text()
-      console.error('❌ Backend error response:', errorText)
-      try {
-        const errorData = JSON.parse(errorText)
-        throw new Error(errorData.message || `Backend responded with status: ${backendResponse.status}`)
-      } catch {
-        throw new Error(errorText || `Backend responded with status: ${backendResponse.status}`)
-      }
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      return NextResponse.json({ error: "Backend error", details: errorText }, { status: 500 })
     }
-
-    const savedItem = await backendResponse.json()
-
-    return NextResponse.json(
-      { message: "Item reported successfully", object: savedItem },
-      { status: 201 }
-    )
+    
+    const result = await response.json()
+    return NextResponse.json({ success: true, message: "Item reported successfully", object: result })
+    
   } catch (error) {
-    console.error("Error creating lost object:", error)
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Exception", details: String(error) }, { status: 500 })
   }
+}
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  })
 }

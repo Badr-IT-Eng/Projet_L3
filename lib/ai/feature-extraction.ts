@@ -86,9 +86,9 @@ export async function extractImageFeatures(imageUrl: string): Promise<number[]> 
 }
 
 /**
- * Calculate similarity between two feature vectors (cosine similarity)
- * @param features1 - First feature vector
- * @param features2 - Second feature vector
+ * Enhanced similarity calculation with multiple algorithms for maximum precision
+ * @param features1 - First feature vector (search query)
+ * @param features2 - Second feature vector (database item)
  * @returns Similarity score (0-100)
  */
 export function calculateSimilarity(features1: number[], features2: number[]): number {
@@ -97,9 +97,8 @@ export function calculateSimilarity(features1: number[], features2: number[]): n
   }
   
   try {
-    // Compute cosine similarity between the feature vectors
+    // 1. Cosine similarity (primary metric)
     const dotProduct = features1.reduce((sum, value, i) => sum + value * features2[i], 0);
-    
     const magnitude1 = Math.sqrt(features1.reduce((sum, value) => sum + value * value, 0));
     const magnitude2 = Math.sqrt(features2.reduce((sum, value) => sum + value * value, 0));
     
@@ -107,11 +106,46 @@ export function calculateSimilarity(features1: number[], features2: number[]): n
       return 0;
     }
     
-    // Cosine similarity converted to percentage
-    const similarity = (dotProduct / (magnitude1 * magnitude2));
-    return Math.max(0, Math.min(100, Math.round(similarity * 100)));
+    const cosineSimilarity = dotProduct / (magnitude1 * magnitude2);
+    
+    // 2. Euclidean distance (secondary metric)
+    const euclideanDistance = Math.sqrt(
+      features1.reduce((sum, value, i) => sum + Math.pow(value - features2[i], 2), 0)
+    );
+    const maxDistance = Math.sqrt(features1.length * 2); // Max possible distance
+    const euclideanSimilarity = Math.max(0, 1 - (euclideanDistance / maxDistance));
+    
+    // 3. Correlation coefficient (tertiary metric)
+    const mean1 = features1.reduce((sum, val) => sum + val, 0) / features1.length;
+    const mean2 = features2.reduce((sum, val) => sum + val, 0) / features2.length;
+    
+    const numerator = features1.reduce((sum, val, i) => 
+      sum + (val - mean1) * (features2[i] - mean2), 0
+    );
+    
+    const denominator1 = Math.sqrt(features1.reduce((sum, val) => 
+      sum + Math.pow(val - mean1, 2), 0
+    ));
+    const denominator2 = Math.sqrt(features2.reduce((sum, val) => 
+      sum + Math.pow(val - mean2, 2), 0
+    ));
+    
+    const correlation = denominator1 * denominator2 === 0 ? 0 : 
+      Math.abs(numerator / (denominator1 * denominator2));
+    
+    // 4. Combined weighted score for maximum precision
+    const combinedScore = (
+      cosineSimilarity * 0.5 +           // 50% weight to cosine
+      euclideanSimilarity * 0.3 +        // 30% weight to euclidean  
+      correlation * 0.2                  // 20% weight to correlation
+    );
+    
+    // Apply non-linear transformation for better discrimination
+    const enhancedScore = Math.pow(Math.max(0, combinedScore), 1.2);
+    
+    return Math.max(0, Math.min(100, Math.round(enhancedScore * 100)));
   } catch (error) {
-    console.error('Error calculating similarity:', error);
+    console.error('Error calculating enhanced similarity:', error);
     return 0;
   }
 } 

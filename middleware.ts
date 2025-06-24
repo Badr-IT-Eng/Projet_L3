@@ -48,6 +48,8 @@ export default withAuth(
           pathname.startsWith("/api/detection") ||
           pathname.startsWith("/api/matching") ||
           pathname.startsWith("/api/upload") ||
+          pathname.startsWith("/api/contact") ||
+          pathname.startsWith("/api/test-backend") ||
           pathname.startsWith("/public/") ||
           pathname.includes(".") || // Static files with extensions
           pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|webp|css|js|mp4|txt|json)$/)

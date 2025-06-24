@@ -500,7 +500,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                             required
                             disabled={loading || lockoutStatus?.locked}
                             placeholder={type === "signin" ? "Enter username or email" : "Choose a username"}
-                            className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="pl-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
                           />
                         </div>
                       </div>
@@ -521,7 +521,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 required
                                 disabled={loading}
                                 placeholder="Enter your email"
-                                className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="pl-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
                               />
                             </div>
                           </div>
@@ -537,7 +537,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 onChange={handleChange}
                                 disabled={loading}
                                 placeholder="First name"
-                                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="h-12 border-gray-200 focus:border-primary focus:ring-primary"
                               />
                             </div>
                             <div className="space-y-2">
@@ -550,7 +550,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 onChange={handleChange}
                                 disabled={loading}
                                 placeholder="Last name"
-                                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="h-12 border-gray-200 focus:border-primary focus:ring-primary"
                               />
                             </div>
                           </div>
@@ -567,7 +567,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 onChange={handleChange}
                                 disabled={loading}
                                 placeholder="Enter your phone number"
-                                className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="pl-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
                               />
                             </div>
                           </div>
@@ -589,7 +589,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                               required
                               disabled={loading || lockoutStatus?.locked}
                               placeholder="Enter your password"
-                              className="pl-10 pr-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                              className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
                             />
                             <Button
                               type="button"
@@ -632,7 +632,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                             required
                             disabled={loading}
                             placeholder="Create a secure password"
-                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
                           />
                           <Button
                             type="button"
@@ -719,7 +719,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                             required
                             disabled={loading}
                             placeholder="Confirm your password"
-                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
                           />
                           <Button
                             type="button"
@@ -757,7 +757,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                     <Button
                       type="button"
                       onClick={nextStep}
-                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary-focus hover:to-accent-focus text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                       disabled={!formData.username || !formData.email}
                     >
                       Continue
@@ -777,7 +777,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                       )}
                       <Button
                         type="submit"
-                        className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary-focus hover:to-accent-focus text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={loading || !isFormValid()}
                       >
                         {loading ? (
