@@ -11,6 +11,41 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 from ultralytics import YOLO
+import torch
+from ultralytics.nn.tasks import DetectionModel
+from torch.nn.modules.container import Sequential, ModuleList
+from torch.nn.modules.conv import Conv2d
+from ultralytics.nn.modules.conv import Conv
+from torch.nn.modules.batchnorm import BatchNorm2d
+from torch.nn.modules.activation import SiLU
+from ultralytics.nn.modules.block import C2f
+from ultralytics.nn.modules.block import Bottleneck
+from ultralytics.nn.modules.block import SPPF
+from torch.nn.modules.pooling import MaxPool2d
+from torch.nn.modules.upsampling import Upsample
+from ultralytics.nn.modules.conv import Concat
+from ultralytics.nn.modules.head import Detect
+from ultralytics.nn.modules.block import DFL
+
+# Patch for PyTorch 2.6+ and Ultralytics YOLO
+try:
+    torch.serialization.add_safe_globals([DetectionModel])
+    torch.serialization.add_safe_globals([Sequential])
+    torch.serialization.add_safe_globals([Conv])
+    torch.serialization.add_safe_globals([Conv2d])
+    torch.serialization.add_safe_globals([BatchNorm2d])
+    torch.serialization.add_safe_globals([SiLU])
+    torch.serialization.add_safe_globals([C2f])
+    torch.serialization.add_safe_globals([ModuleList])
+    torch.serialization.add_safe_globals([Bottleneck])
+    torch.serialization.add_safe_globals([SPPF])
+    torch.serialization.add_safe_globals([MaxPool2d])
+    torch.serialization.add_safe_globals([Upsample])
+    torch.serialization.add_safe_globals([Concat])
+    torch.serialization.add_safe_globals([Detect])
+    torch.serialization.add_safe_globals([DFL])
+except Exception as e:
+    print(f"[WARN] Could not patch torch safe globals: {e}")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -21,13 +56,13 @@ class StrictSuitcaseDetector:
     Ignores small components like handles, zippers, wheels
     """
     
-    def __init__(self, confidence_threshold: float = 0.4):
+    def __init__(self, confidence_threshold: float = 0.05):
         self.confidence_threshold = confidence_threshold
         
-        # Load YOLO model
+        # Load YOLO model with improved accuracy
         try:
-            self.model = YOLO('yolov8n.pt')
-            logger.info("✅ YOLO model loaded successfully")
+            self.model = YOLO('yolov8m.pt')
+            logger.info("✅ YOLOv8m model loaded successfully (enhanced accuracy)")
         except Exception as e:
             logger.error(f"❌ Could not load YOLO: {e}")
             self.model = None
@@ -214,24 +249,23 @@ class StrictSuitcaseDetector:
         return report
     
     def _get_yolo_detections(self, frame: np.ndarray) -> List[Dict]:
-        """Get YOLO detections"""
+        """Get YOLO detections with advanced logging"""
         if not self.model:
             return []
-        
         try:
             # Use very low confidence for YOLO detection to catch everything
             results = self.model(frame, verbose=False, conf=0.01)
             detections = []
-            
             for result in results:
                 boxes = result.boxes
                 if boxes is not None:
+                    logger.info(f"[YOLO] Frame: {frame.shape}, Raw detections: {len(boxes)}")
                     for box in boxes:
                         x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                         confidence = box.conf[0].cpu().numpy()
                         class_id = int(box.cls[0].cpu().numpy())
                         class_name = result.names[class_id]
-                        
+                        logger.info(f"[YOLO] Detected {class_name} ({confidence:.3f}) at [{int(x1)},{int(y1)},{int(x2)},{int(y2)}]")
                         if confidence > self.confidence_threshold:
                             detection = {
                                 'bbox': [int(x1), int(y1), int(x2-x1), int(y2-y1)],
@@ -240,9 +274,7 @@ class StrictSuitcaseDetector:
                                 'class_id': class_id
                             }
                             detections.append(detection)
-            
             return detections
-            
         except Exception as e:
             logger.error(f"YOLO detection failed: {e}")
             return []
@@ -471,7 +503,7 @@ def main():
     print("🖼️ Maximum context cropping")
     print("=" * 50)
     
-    detector = StrictSuitcaseDetector(confidence_threshold=0.4)
+    detector = StrictSuitcaseDetector(confidence_threshold=0.05)
     
     # Test with suitcase video
     video_path = '../copied_services/python-services/detection-service/output.mp4'

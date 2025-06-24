@@ -1,0 +1,27 @@
+# Unified Detection API Requirements
+# Core dependencies for the consolidated detection service
+
+# Flask and web framework
+Flask==2.3.3
+Flask-CORS==4.0.0
+Werkzeug==2.3.7
+
+# Computer Vision and ML
+opencv-python==4.8.1.78
+ultralytics==8.0.196
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.21.0
+Pillow>=9.0.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Optional: GPU support (uncomment if using CUDA)
+# torch>=2.0.0+cu118
+# torchvision>=0.15.0+cu118
+
+# Development and testing (optional)
+pytest>=7.0.0
+pytest-flask>=1.2.0

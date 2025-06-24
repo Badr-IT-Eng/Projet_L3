@@ -44,7 +44,8 @@ export const authOptions: AuthOptions = {
         }
 
         try {
-          const response = await fetch("http://localhost:8082/api/auth/signin", {
+          const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8082";
+          const response = await fetch(`${backendUrl}/api/auth/signin`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

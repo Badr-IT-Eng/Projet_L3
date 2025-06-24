@@ -104,18 +104,20 @@ public class WebSecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll()
                 
-                // Public read access to items (limited)
+                // Public read access to items (limited) - MUST come before general /api/items patterns
                 .requestMatchers(HttpMethod.GET, "/api/items/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items/public/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items/search").permitAll()
                 
-                // Item CRUD - require authentication
+                // Item CRUD - require authentication (general patterns come after specific ones)
+                .requestMatchers(HttpMethod.POST, "/api/items").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/items/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/items").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/items").authenticated()
                 
-                // File access - allow public read for images only
+                // File access - allow public read for images and detected objects
                 .requestMatchers(HttpMethod.GET, "/api/files/public/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/files/detected-objects/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
                 
                 // File upload - require authentication
                 .requestMatchers(HttpMethod.POST, "/api/files/upload").authenticated()

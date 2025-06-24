@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth-options"
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082/api';
 
 // GET /api/lost-objects
 export async function GET(request: NextRequest) {
   try {
+    // Get session for authentication
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (err) {
+      console.warn("Session error:", err);
+    }
     // Get search parameters from the request
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('query');
@@ -14,28 +21,32 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
-    const status = searchParams.get('status');
+    const status = 'LOST'; // Always filter for lost items
     const page = searchParams.get('page') || '0';
     const size = searchParams.get('size') || '10';
     
     // Build the API URL with query parameters
-    let url = `${BACKEND_URL}/items?page=${page}&size=${size}`;
+    let url = `${BACKEND_URL}/items/public/lost?page=${page}&size=${size}`;
     if (query) url += `&query=${encodeURIComponent(query)}`;
     if (category && category !== 'all') url += `&category=${encodeURIComponent(category)}`;
     if (location) url += `&location=${encodeURIComponent(location)}`;
     if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
     if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
-    if (status) url += `&status=${encodeURIComponent(status)}`;
 
-    console.log(`Fetching from backend URL: ${url}`);
+    console.log(`🔗 Fetching from backend URL: ${url}`);
+    
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    // Do NOT add Authorization header for public lost items endpoint
+    console.log(`📤 Request headers:`, headers);
     
     // Fetch data from Spring Boot backend
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store'
+      headers,
+      cache: 'no-store',
+      credentials: 'omit'
     });
+    
+    console.log(`📥 Response status: ${response.status}`);
 
     if (!response.ok) {
       console.error(`API responded with status: ${response.status}`);

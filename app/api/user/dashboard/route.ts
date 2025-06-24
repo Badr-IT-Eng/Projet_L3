@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user dashboard data from Spring Boot backend
-    const response = await fetch(`${BACKEND_URL}/user/dashboard`, {
+    const response = await fetch(`${BACKEND_URL}/api/user/dashboard`, {
       headers: {
         'Authorization': `Bearer ${(session as any).accessToken}`,
         'Content-Type': 'application/json',

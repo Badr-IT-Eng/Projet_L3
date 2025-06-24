@@ -30,6 +30,7 @@ export default function LostItemsPage() {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const itemsPerPage = 12
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -49,44 +50,85 @@ export default function LostItemsPage() {
   }, [selectedCategory, currentPage])
 
   const fetchLostItems = async () => {
-    setLoading(true)
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        size: "12",
-        // Remove status filter to show all items
-      })
-
-      if (selectedCategory !== "all") params.append("category", selectedCategory)
-
-      const response = await fetch(`/api/lost-objects?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        // Transform the data to match our interface
-        const transformedItems = data.objects?.map((item: any) => ({
-          id: item.id,
-          name: item.name || "Unknown Item",
-          description: item.description || "No description available",
-          category: item.category || "OTHER",
-          location: item.location || "Unknown Location",
-          dateLost: item.date || new Date().toISOString().split('T')[0],
-          imageUrl: item.image || "/placeholder.svg",
-          reportedBy: item.reportedBy || "Anonymous",
-          contactInfo: item.contactInfo || "No contact info",
-          reward: item.reward,
-          status: item.status || "LOST"
-        })) || []
-        
-        setLostItems(transformedItems)
-        setTotalPages(data.totalPages || 0)
+      setLoading(true);
+      let url = `http://localhost:8082/api/items/public/lost?page=${currentPage}&size=${itemsPerPage}`;
+      
+      // Add category filter if not "all"
+      if (selectedCategory !== "all") {
+        url += `&category=${encodeURIComponent(selectedCategory)}`;
       }
+      
+      console.log('🔗 Fetching from URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors'
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 Response data:', data);
+      
+      // Using direct backend call, so data.items contains the array
+      const objectsArray = data.items || [];
+      
+      // Transform the data to match the existing LostItem interface
+      const transformedItems = objectsArray.map((item: any) => ({
+        id: item.id,
+        name: item.name || 'Unnamed Item',
+        description: item.description || 'No description available',
+        category: item.category ? item.category.toUpperCase() : 'OTHER',
+        location: item.location || 'Unknown Location',
+        dateLost: item.dateLost || item.dateFound || item.reportedAt || item.createdAt || item.date || new Date().toISOString().split('T')[0],
+        imageUrl: (() => {
+          const imgUrl = item.imageUrl || item.image;
+          if (!imgUrl || imgUrl === 'test.jpg' || imgUrl === null || imgUrl === 'null') {
+            return '/placeholder.svg';
+          }
+          
+          // If it's already a full URL, return as is
+          if (imgUrl.startsWith('http')) {
+            return imgUrl;
+          }
+          
+          // If it's a relative path starting with /, prepend backend URL
+          if (imgUrl.startsWith('/')) {
+            return `http://localhost:8082${imgUrl}`;
+          }
+          
+          // For other cases (like just filenames), treat as API endpoint
+          return `http://localhost:8082/api/files/${imgUrl}`;
+        })(),
+        reportedBy: item.reportedByUsername || 'Anonymous',
+        contactInfo: 'No contact info',
+        reward: undefined,
+        status: item.status || 'LOST'
+      }));
+
+      setLostItems(transformedItems);
+      setTotalPages(data.totalPages || data.totalPages || 1);
     } catch (error) {
-      console.error("Error fetching lost items:", error)
-      setLostItems([])
+      console.error('❌ Error fetching lost items:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        url: `http://localhost:8082/api/items/public/lost?page=${currentPage}&size=${itemsPerPage}`
+      });
+      setLostItems([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
 
   const getDaysLost = (dateLost: string) => {
@@ -164,11 +206,14 @@ export default function LostItemsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {lostItems.map((item) => {
                 // Validate and sanitize image URL
                 const getValidImageUrl = (url: string) => {
-                  if (!url) return "/placeholder.svg";
+                  if (!url || url === 'null' || url === 'undefined') {
+                    // Return category-specific placeholder
+                    return getCategoryPlaceholder(item.category);
+                  }
                   if (url === "/placeholder.svg") return url;
                   try {
                     // Test if it's a valid URL
@@ -179,15 +224,29 @@ export default function LostItemsPage() {
                     if (url.startsWith("/") || url.startsWith("http")) {
                       return url;
                     }
-                    return "/placeholder.svg";
+                    return getCategoryPlaceholder(item.category);
                   }
+                };
+
+                const getCategoryPlaceholder = (category: string) => {
+                  const placeholders: { [key: string]: string } = {
+                    'ELECTRONICS': '/ai-analysis.jpg',
+                    'BAGS': '/handover.jpg', 
+                    'JEWELRY': '/matching-results.jpg',
+                    'KEYS': '/recover-step.jpg',
+                    'DOCUMENTS': '/report-detail.jpg',
+                    'BOOKS': '/mobile-upload.jpg',
+                    'ACCESSORIES': '/matching-step.jpg',
+                    'OTHER': '/placeholder.jpg'
+                  };
+                  return placeholders[category] || placeholders['OTHER'];
                 };
 
                 const validImageUrl = getValidImageUrl(item.imageUrl);
 
                 return (
                   <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="aspect-square relative">
+                    <div className="aspect-[4/3] relative">
                       <Image
                         src={validImageUrl}
                         alt={item.name}
@@ -195,7 +254,7 @@ export default function LostItemsPage() {
                         className="object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
-                          target.src = "/placeholder.svg"
+                          target.src = getCategoryPlaceholder(item.category)
                         }}
                       />
                     <div className="absolute top-2 right-2">
@@ -210,17 +269,17 @@ export default function LostItemsPage() {
                     </div>
                   </div>
                   
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold line-clamp-1">
+                  <CardHeader className="pb-3 px-6 pt-4">
+                    <CardTitle className="text-xl font-semibold line-clamp-1">
                       {item.name}
                     </CardTitle>
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="line-clamp-2 text-base">
                       {item.description}
                     </CardDescription>
                   </CardHeader>
                   
-                  <CardContent className="pt-0">
-                    <div className="space-y-2 text-sm">
+                  <CardContent className="pt-0 px-6">
+                    <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
                         <span>{item.location}</span>
@@ -243,9 +302,9 @@ export default function LostItemsPage() {
                     </div>
                   </CardContent>
                   
-                  <CardFooter className="pt-0">
+                  <CardFooter className="pt-2 px-6 pb-6">
                     <Link href={`/report?found=${item.id}`} className="w-full">
-                      <Button className="w-full" variant="outline">
+                      <Button className="w-full h-11" variant="outline">
                         I Found This Item
                       </Button>
                     </Link>

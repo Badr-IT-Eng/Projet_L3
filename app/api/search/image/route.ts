@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-options"
 import { calculateSimilarity } from '@/lib/ai/feature-extraction';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get session for authentication
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { features, minScore } = body;
     
@@ -15,8 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get all items from backend
-    const response = await fetch(`${BACKEND_URL}/items?size=1000`);
+    // Get all items from backend with authentication
+    const response = await fetch(`${BACKEND_URL}/api/items?size=1000`, {
+      headers: {
+        'Authorization': `Bearer ${(session as any).accessToken}`,
+        'Content-Type': 'application/json',
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch items: ${response.status}`);
@@ -39,7 +53,7 @@ export async function POST(request: NextRequest) {
         name: item.name || 'Unnamed Item',
         location: item.location || 'Unknown Location',
         date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'Unknown Date',
-        image: item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:8082/api/files/${item.imageUrl}`) : '/placeholder.svg',
+        image: item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${BACKEND_URL}${item.imageUrl}`) : '/placeholder.svg',
         matchScore: similarity,
         category: item.category?.toLowerCase() || 'other',
       };

@@ -4,6 +4,7 @@ import com.recovr.api.dto.DetectedObjectDto;
 import com.recovr.api.entity.*;
 import com.recovr.api.repository.DetectedObjectRepository;
 import com.recovr.api.repository.DetectionSessionRepository;
+import com.recovr.api.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class DetectionService {
 
     private final DetectedObjectRepository detectedObjectRepository;
     private final DetectionSessionRepository detectionSessionRepository;
+    private final ItemRepository itemRepository;
     private final RestTemplate restTemplate;
 
     @Value("${app.models.path:../}")
@@ -402,9 +404,13 @@ public class DetectionService {
                             String categoryStr = (String) obj.get("category");
                             Double confidence = ((Number) obj.get("confidence")).doubleValue();
                             List<Integer> bbox = (List<Integer>) obj.get("bbox");
+                            String screenshotPath = (String) obj.get("screenshot_path");
                             
                             // Map category string to ItemCategory enum
                             ItemCategory category = mapStringToItemCategory(categoryStr);
+                            
+                            // Copy screenshot to proper location and get URL
+                            String imageUrl = copyAndSaveScreenshot(screenshotPath, trackingId);
                             
                             // Save to database
                             DetectedObject detectedObject = processDetection(
@@ -416,8 +422,11 @@ public class DetectionService {
                                 bbox.get(1), // y  
                                 bbox.get(2), // width
                                 bbox.get(3), // height
-                                (String) obj.get("cropped_image_url") // snapshot URL
+                                imageUrl // processed image URL
                             );
+                            
+                            // Also create an Item record for the lost items page
+                            createItemFromDetection(detectedObject, category, imageUrl, trackingId);
                             
                             log.info("💾 Saved detected object: {} - {} ({}% confidence)", 
                                 detectedObject.getId(), category, Math.round(confidence * 100));
@@ -495,5 +504,78 @@ public class DetectionService {
             default:
                 return ItemCategory.MISCELLANEOUS;
         }
+    }
+    
+    private String copyAndSaveScreenshot(String screenshotPath, String trackingId) {
+        try {
+            if (screenshotPath == null || screenshotPath.isEmpty()) {
+                log.warn("No screenshot path provided for object: {}", trackingId);
+                return null;
+            }
+            
+            // Create uploads/detected-objects directory if it doesn't exist
+            java.io.File uploadsDir = new java.io.File("uploads/detected-objects");
+            if (!uploadsDir.exists()) {
+                boolean created = uploadsDir.mkdirs();
+                log.info("Created uploads directory: {} (success: {})", uploadsDir.getAbsolutePath(), created);
+            }
+            
+            // Get source file
+            java.io.File sourceFile = new java.io.File(screenshotPath);
+            if (!sourceFile.exists()) {
+                log.warn("Screenshot file not found: {}", screenshotPath);
+                return null;
+            }
+            
+            // Generate new filename with timestamp
+            String extension = screenshotPath.contains(".") ? 
+                screenshotPath.substring(screenshotPath.lastIndexOf('.')) : ".jpg";
+            String newFilename = trackingId + "_" + System.currentTimeMillis() + extension;
+            java.io.File destFile = new java.io.File(uploadsDir, newFilename);
+            
+            // Copy file
+            java.nio.file.Files.copy(sourceFile.toPath(), destFile.toPath(), 
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            
+            // Return absolute URL that matches the FileController endpoint
+            String imageUrl = "http://localhost:8082/api/files/detected-objects/" + newFilename;
+            log.info("📸 Copied screenshot: {} -> {}", screenshotPath, imageUrl);
+            
+            return imageUrl;
+            
+        } catch (Exception e) {
+            log.error("Failed to copy screenshot: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    @Transactional
+    private void createItemFromDetection(DetectedObject detectedObject, ItemCategory category, String imageUrl, String trackingId) {
+        try {
+            // Create an Item record for the lost items page
+            Item item = new Item();
+            item.setName(generateItemName(category, trackingId));
+            item.setDescription("Object detected by AI video analysis - location and timing based on detection");
+            item.setStatus(ItemStatus.LOST); // Objects detected by admin are items that someone lost
+            item.setCategory(category);
+            item.setLocation("Detected in uploaded video - check with admin for exact location");
+            item.setImageUrl(imageUrl);
+            item.setReportedAt(LocalDateTime.now());
+            
+            Item savedItem = itemRepository.save(item);
+            
+            log.info("📋 Created Item record {} for detected object: {}", savedItem.getId(), trackingId);
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to create Item record for detected object {}: {}", trackingId, e.getMessage());
+        }
+    }
+    
+    private String generateItemName(ItemCategory category, String trackingId) {
+        String categoryName = category.toString().toLowerCase().replace("_", " ");
+        String shortId = trackingId.length() > 10 ? trackingId.substring(0, 10) : trackingId;
+        return String.format("AI Detected %s (%s)", 
+            categoryName.substring(0, 1).toUpperCase() + categoryName.substring(1), 
+            shortId);
     }
 } 

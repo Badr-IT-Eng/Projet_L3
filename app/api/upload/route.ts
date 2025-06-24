@@ -1,11 +1,43 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { uploadImage } from "@/lib/cloudinary";
+import { authOptions } from "@/lib/auth-options";
 import { extractImageFeatures } from "@/lib/ai/feature-extraction";
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 // Maximum file size (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+async function saveImageLocally(buffer: Buffer, originalFileName: string) {
+  try {
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(originalFileName);
+    const uniqueFileName = `${crypto.randomUUID()}${fileExtension}`;
+    const filePath = path.join(uploadsDir, uniqueFileName);
+
+    // Write file to disk
+    fs.writeFileSync(filePath, buffer);
+
+    // Return URL and metadata
+    return {
+      url: `/uploads/${uniqueFileName}`,
+      publicId: uniqueFileName,
+      width: 800, // Mock dimensions
+      height: 600,
+      filePath
+    };
+  } catch (error) {
+    console.error('Error saving image locally:', error);
+    throw new Error('Local image save failed');
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -56,8 +88,8 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to Cloudinary
-    const imageData = await uploadImage(buffer);
+    // Save file locally instead of using Cloudinary
+    const imageData = await saveImageLocally(buffer, file.name);
 
     // Extract image features for AI matching (if available)
     let features = null;

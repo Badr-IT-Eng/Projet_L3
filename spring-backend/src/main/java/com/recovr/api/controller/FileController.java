@@ -89,6 +89,29 @@ public class FileController {
                 .body(resource);
     }
 
+    @GetMapping("/detected-objects/{fileName:.+}")
+    public ResponseEntity<Resource> downloadDetectedObjectFile(@PathVariable String fileName, HttpServletRequest request) {
+        // Load file from detected-objects subdirectory
+        Resource resource = fileStorageService.loadFileAsResource("detected-objects/" + fileName);
+
+        // Try to determine file's content type
+        String contentType = null;
+        try {
+            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+        } catch (IOException ex) {
+            // Logger would be used here in a production app
+        }
+
+        // Fallback to the default content type if type could not be determined
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
+    }
+
     @DeleteMapping("/{fileName:.+}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> deleteFile(@PathVariable String fileName) {

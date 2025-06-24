@@ -143,4 +143,28 @@ public class ItemController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/public/lost")
+    public ResponseEntity<?> getPublicLostItems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        try {
+            Pageable paging = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Page<ItemDto> pageItems = itemService.getAllItems(paging, category, "LOST", location, dateFrom, dateTo);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("items", pageItems.getContent());
+            response.put("currentPage", pageItems.getNumber());
+            response.put("totalItems", pageItems.getTotalElements());
+            response.put("totalPages", pageItems.getTotalPages());
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 } 
