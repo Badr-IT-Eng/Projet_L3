@@ -79,14 +79,23 @@ public class ItemService {
 
     @Transactional
     public ItemDto createItem(ItemDto itemDto, User user) {
+        log.info("Creating item: name={}, status={}, category={}, imageUrl={}", 
+            itemDto.getName(), itemDto.getStatus(), itemDto.getCategory(), itemDto.getImageUrl());
+        
         Item item = new Item();
         updateItemFromDto(item, itemDto);
         if (user != null) {
             item.setReportedBy(user);
             item.setReportedAt(LocalDateTime.now());
         }
-        item.setStatus(ItemStatus.FOUND);
+        // Use the status from the DTO instead of forcing it to FOUND
+        // This allows both LOST and FOUND items to be created correctly
+        if (item.getStatus() == null) {
+            item.setStatus(ItemStatus.FOUND); // Default fallback
+        }
         Item savedItem = itemRepository.save(item);
+        
+        log.info("Successfully created item ID {} with status: {}", savedItem.getId(), savedItem.getStatus());
         return convertToDto(savedItem);
     }
 

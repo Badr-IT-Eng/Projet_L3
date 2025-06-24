@@ -405,12 +405,53 @@ public class DetectionService {
                             Double confidence = ((Number) obj.get("confidence")).doubleValue();
                             List<Integer> bbox = (List<Integer>) obj.get("bbox");
                             String screenshotPath = (String) obj.get("screenshot_path");
+                            String croppedImageUrl = (String) obj.get("cropped_image_url");
                             
                             // Map category string to ItemCategory enum
                             ItemCategory category = mapStringToItemCategory(categoryStr);
                             
-                            // Copy screenshot to proper location and get URL
-                            String imageUrl = copyAndSaveScreenshot(screenshotPath, trackingId);
+                            // Try to get image URL from multiple sources
+                            String imageUrl = null;
+                            
+                            // First priority: cropped_image_url from Python API (base64 data)
+                            if (croppedImageUrl != null && !croppedImageUrl.isEmpty()) {
+                                if (croppedImageUrl.startsWith("data:image/")) {
+                                    // It's a base64 data URL, save it to file system
+                                    imageUrl = saveBase64Image(croppedImageUrl, trackingId);
+                                    if (imageUrl != null) {
+                                        log.info("✅ Saved base64 image from Python API: {}", imageUrl);
+                                    } else {
+                                        log.warn("⚠️ Failed to save base64 image from Python API");
+                                    }
+                                } else {
+                                    // It's already a URL, use it directly
+                                    imageUrl = croppedImageUrl;
+                                    log.info("✅ Using cropped image URL from Python API: {}", croppedImageUrl);
+                                }
+                            }
+                            // Second priority: copy screenshot from path
+                            else if (screenshotPath != null && !screenshotPath.isEmpty()) {
+                                imageUrl = copyAndSaveScreenshot(screenshotPath, trackingId);
+                                if (imageUrl != null) {
+                                    log.info("✅ Copied screenshot from path: {} -> {}", screenshotPath, imageUrl);
+                                } else {
+                                    log.warn("⚠️ Failed to copy screenshot from path: {}", screenshotPath);
+                                }
+                            }
+                            
+                            // Fallback: Use a placeholder if no image is available
+                            if (imageUrl == null || imageUrl.isEmpty()) {
+                                log.warn("⚠️ No image available for object {}, using placeholder", trackingId);
+                                imageUrl = "/placeholder.svg"; // Fallback placeholder
+                            }
+                            
+                            // Final safety check before saving to database
+                            if (imageUrl == null || imageUrl.isEmpty()) {
+                                log.error("🚨 CRITICAL: imageUrl is null/empty after all processing for object {}", trackingId);
+                                imageUrl = "http://localhost:8082/placeholder.svg"; // Use full URL for consistency
+                            }
+                            
+                            log.info("🎯 Final imageUrl before database save: {}", imageUrl);
                             
                             // Save to database
                             DetectedObject detectedObject = processDetection(
@@ -425,11 +466,11 @@ public class DetectionService {
                                 imageUrl // processed image URL
                             );
                             
-                            // Also create an Item record for the lost items page
+                            // Also create an Item record for the lost items page with the SAME imageUrl
                             createItemFromDetection(detectedObject, category, imageUrl, trackingId);
                             
-                            log.info("💾 Saved detected object: {} - {} ({}% confidence)", 
-                                detectedObject.getId(), category, Math.round(confidence * 100));
+                            log.info("💾 Saved detected object: {} - {} ({}% confidence) with imageUrl: {}", 
+                                detectedObject.getId(), category, Math.round(confidence * 100), imageUrl);
                             
                         } catch (Exception e) {
                             log.error("❌ Failed to save detected object: {}", e.getMessage());
@@ -506,6 +547,55 @@ public class DetectionService {
         }
     }
     
+    /**
+     * Save base64 image data to file system
+     */
+    private String saveBase64Image(String base64Data, String trackingId) {
+        try {
+            if (base64Data == null || base64Data.isEmpty()) {
+                log.warn("No base64 image data provided for object: {}", trackingId);
+                return null;
+            }
+            
+            // Create uploads/detected-objects directory if it doesn't exist
+            java.io.File uploadsDir = new java.io.File("uploads/detected-objects");
+            if (!uploadsDir.exists()) {
+                boolean created = uploadsDir.mkdirs();
+                log.info("Created uploads directory: {} (success: {})", uploadsDir.getAbsolutePath(), created);
+            }
+            
+            // Extract base64 data (remove data:image/jpeg;base64, prefix if present)
+            String imageData = base64Data;
+            if (base64Data.startsWith("data:image/")) {
+                int commaIndex = base64Data.indexOf(',');
+                if (commaIndex > 0) {
+                    imageData = base64Data.substring(commaIndex + 1);
+                }
+            }
+            
+            // Decode base64 to bytes
+            byte[] imageBytes = java.util.Base64.getDecoder().decode(imageData);
+            
+            // Generate new filename with timestamp
+            String newFilename = trackingId + "_" + System.currentTimeMillis() + ".jpg";
+            java.io.File destFile = new java.io.File(uploadsDir, newFilename);
+            
+            // Write image bytes to file
+            java.nio.file.Files.write(destFile.toPath(), imageBytes);
+            
+            // Return absolute URL that matches the FileController endpoint
+            String imageUrl = "http://localhost:8082/api/files/detected-objects/" + newFilename;
+            log.info("📸 Saved base64 image: {} bytes -> {} (file: {})", 
+                imageBytes.length, imageUrl, destFile.getAbsolutePath());
+            
+            return imageUrl;
+            
+        } catch (Exception e) {
+            log.error("Failed to save base64 image: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private String copyAndSaveScreenshot(String screenshotPath, String trackingId) {
         try {
             if (screenshotPath == null || screenshotPath.isEmpty()) {
@@ -552,6 +642,15 @@ public class DetectionService {
     @Transactional
     private void createItemFromDetection(DetectedObject detectedObject, ItemCategory category, String imageUrl, String trackingId) {
         try {
+            log.info("🔧 createItemFromDetection called with imageUrl: {}, trackingId: {}", imageUrl, trackingId);
+            
+            // Ensure we have a valid image URL
+            String finalImageUrl = imageUrl;
+            if (finalImageUrl == null || finalImageUrl.isEmpty()) {
+                log.warn("🚨 imageUrl was null/empty in createItemFromDetection, using placeholder");
+                finalImageUrl = "http://localhost:8082/placeholder.svg";
+            }
+            
             // Create an Item record for the lost items page
             Item item = new Item();
             item.setName(generateItemName(category, trackingId));
@@ -559,12 +658,15 @@ public class DetectionService {
             item.setStatus(ItemStatus.LOST); // Objects detected by admin are items that someone lost
             item.setCategory(category);
             item.setLocation("Detected in uploaded video - check with admin for exact location");
-            item.setImageUrl(imageUrl);
+            item.setImageUrl(finalImageUrl);
+            
+            log.info("🎯 Setting Item imageUrl to: {}", finalImageUrl);
             item.setReportedAt(LocalDateTime.now());
             
             Item savedItem = itemRepository.save(item);
             
-            log.info("📋 Created Item record {} for detected object: {}", savedItem.getId(), trackingId);
+            log.info("📋 ✅ Created Item record {} for detected object: {} with imageUrl: {}", 
+                savedItem.getId(), trackingId, savedItem.getImageUrl());
             
         } catch (Exception e) {
             log.error("❌ Failed to create Item record for detected object {}: {}", trackingId, e.getMessage());

@@ -91,6 +91,8 @@ public class ItemController {
             return new ResponseEntity<>(createdItem, HttpStatus.CREATED);
         } catch (Exception e) {
             log.error("Error in createItem: ", e);
+            log.error("Error details: {}", e.toString());
+            log.error("Stack trace: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

@@ -144,29 +144,42 @@ export async function POST(request: Request) {
     const itemData = {
       name: data.name,
       description: data.description || '',
-      type: 'LOST', // Items reported through this form are lost items
-      category: categoryMapping[data.category.toLowerCase()] || 'MISCELLANEOUS',
-      status: 'LOST',
+      type: 'LOST', // Items reported through this form are lost items (ItemType enum)
+      category: categoryMapping[data.category.toLowerCase()] || 'MISCELLANEOUS', // ItemCategory enum
+      status: 'LOST', // ItemStatus enum
       location: data.location,
       imageUrl: data.image,
+      // Handle date properly - for lost items, set dateLost instead of dateFound
       dateLost: data.date ? `${data.date}T${data.time || '10:00'}:00` : new Date().toISOString(),
+      dateFound: null, // Lost items don't have a found date
       latitude: data.coordinates?.lat || null,
       longitude: data.coordinates?.lng || null
     }
 
+    console.log('📤 Sending to backend:', JSON.stringify(itemData, null, 2))
+    
     // Send to Spring Boot backend
-    const backendResponse = await fetch(`${BACKEND_URL}/items`, {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const url = `${BACKEND_URL}/items`;
+    console.log('🔗 Backend URL:', url);
+    
+    const backendResponse = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {})
-      },
+      headers,
       body: JSON.stringify(itemData)
     })
 
+    console.log('📥 Backend response status:', backendResponse.status)
+
     if (!backendResponse.ok) {
-      const errorData = await backendResponse.json().catch(() => ({}))
-      throw new Error(errorData.message || `Backend responded with status: ${backendResponse.status}`)
+      const errorText = await backendResponse.text()
+      console.error('❌ Backend error response:', errorText)
+      try {
+        const errorData = JSON.parse(errorText)
+        throw new Error(errorData.message || `Backend responded with status: ${backendResponse.status}`)
+      } catch {
+        throw new Error(errorText || `Backend responded with status: ${backendResponse.status}`)
+      }
     }
 
     const savedItem = await backendResponse.json()

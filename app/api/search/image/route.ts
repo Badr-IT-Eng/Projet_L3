@@ -7,11 +7,12 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get session for authentication
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get session for authentication (optional)
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (err) {
+      console.warn("Session error:", err);
     }
 
     const body = await request.json();
@@ -24,11 +25,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get all items from backend with authentication
-    const response = await fetch(`${BACKEND_URL}/api/items?size=1000`, {
+    // Get all items from backend (use public endpoint for lost items)
+    const response = await fetch(`${BACKEND_URL}/api/items/public/lost?size=1000`, {
       headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
         'Content-Type': 'application/json',
+        ...(session?.user ? { 'Authorization': `Bearer ${(session as any).accessToken}` } : {})
       }
     });
     
