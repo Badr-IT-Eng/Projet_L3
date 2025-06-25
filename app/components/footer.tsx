@@ -63,11 +63,9 @@ export function Footer() {
             <h3 className="text-base font-medium mb-4">Resources</h3>
             <ul className="space-y-2">
               {[
-                { title: "Help Center", href: "/help" },
                 { title: "Privacy Policy", href: "/privacy" },
                 { title: "Terms of Service", href: "/terms" },
                 { title: "FAQ", href: "/faq" },
-                { title: "Blog", href: "/blog" },
               ].map((link) => (
                 <li key={link.title}>
                   <Link 
@@ -88,20 +86,20 @@ export function Footer() {
               <li className="flex items-start space-x-3 text-sm">
                 <MapPin className="h-5 w-5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground">
-                  123 Recovery Street, Tech Park<br />
-                  San Francisco, CA 94107
+                  22 traverse brun<br />
+                  13016 Marseille, France
                 </span>
               </li>
               <li className="flex items-center space-x-3 text-sm">
                 <Mail className="h-5 w-5 text-muted-foreground" />
-                <a href="mailto:contact@recovr.tech" className="text-muted-foreground hover:text-primary transition-colors">
-                  contact@recovr.tech
+                <a href="mailto:youssef.azizi@etu.univ-amu.fr" className="text-muted-foreground hover:text-primary transition-colors">
+                  youssef.azizi@etu.univ-amu.fr
                 </a>
               </li>
               <li className="flex items-center space-x-3 text-sm">
                 <Phone className="h-5 w-5 text-muted-foreground" />
-                <a href="tel:+1-800-RECOVR" className="text-muted-foreground hover:text-primary transition-colors">
-                  +1-800-RECOVR
+                <a href="tel:+33749491042" className="text-muted-foreground hover:text-primary transition-colors">
+                  +33 7 49 49 10 42
                 </a>
               </li>
             </ul>

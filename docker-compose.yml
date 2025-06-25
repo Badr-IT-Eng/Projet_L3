@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  database:
+    image: mysql:8.0
+    container_name: recovr-database
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: recovr_db
+      MYSQL_USER: recovr_user
+      MYSQL_PASSWORD: recovr_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./spring-backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d
+    networks:
+      - recovr-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Spring Backend API
+  backend:
+    build:
+      context: ./spring-backend
+      dockerfile: Dockerfile
+    container_name: recovr-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/recovr_db
+      SPRING_DATASOURCE_USERNAME: recovr_user
+      SPRING_DATASOURCE_PASSWORD: recovr_password
+      DETECTION_API_URL: http://detection:5001
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - recovr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Python Detection Service
+  detection:
+    build:
+      context: ./python-detection
+      dockerfile: Dockerfile
+    container_name: recovr-detection
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      YOLO_MODEL_PATH: yolov8n.pt
+      CONFIDENCE_THRESHOLD: "0.5"
+      MAX_FILE_SIZE: "50"
+      FLASK_ENV: production
+    volumes:
+      - detection_uploads:/app/uploads
+      - detection_models:/app/models
+    networks:
+      - recovr-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recovr-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: your-secret-key-here
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_DETECTION_API_URL: http://localhost:5001
+    depends_on:
+      - backend
+      - detection
+    networks:
+      - recovr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: recovr-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - recovr-network
+    profiles:
+      - production
+
+volumes:
+  mysql_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  detection_uploads:
+    driver: local
+  detection_models:
+    driver: local
+
+networks:
+  recovr-network:
+    driver: bridge

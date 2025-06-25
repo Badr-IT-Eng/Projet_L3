@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { format } from "date-fns"
 import { CalendarIcon, MapPin, Upload, Loader2, X } from "lucide-react"
 import { PageContainer } from "@/components/page-container"
+import { MapPicker } from "@/components/map-picker"
 import { motion } from "framer-motion"
 
 // Form validation schema
@@ -44,6 +45,7 @@ export default function ReportPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null)
 
   const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
@@ -64,6 +66,11 @@ export default function ReportPage() {
 
   if (uploadedImage) {
     setValue("image", uploadedImage)
+  }
+
+  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+    setSelectedLocation(location)
+    setValue("location", location.address)
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,12 +134,17 @@ export default function ReportPage() {
       // Format date for submission
       const formattedDate = format(data.date, "yyyy-MM-dd")
 
-      // Prepare coordinates (in a real app, this would be from a map picker)
-      const coordinates = {
-        x: Math.floor(Math.random() * 500), // Mock coordinates for demo
+      // Use selected location coordinates or default to Marseille
+      const coordinates = selectedLocation ? {
+        x: Math.floor(Math.random() * 500), // Still used for display purposes
         y: Math.floor(Math.random() * 400),
-        lat: 40.7128 + (Math.random() * 0.01), // Mock NYC area coordinates
-        lng: -74.006 + (Math.random() * 0.01)
+        lat: selectedLocation.lat,
+        lng: selectedLocation.lng
+      } : {
+        x: Math.floor(Math.random() * 500),
+        y: Math.floor(Math.random() * 400),
+        lat: 43.2965, // Marseille default coordinates
+        lng: 5.3698
       }
 
       // Submit to API
@@ -158,9 +170,9 @@ export default function ReportPage() {
       reset()
       setUploadedImage(null)
       
-      // Redirect to confirmation page after a short delay
-    setTimeout(() => {
-        router.push("/lost-objects")
+      // Redirect to lost items page after a short delay
+      setTimeout(() => {
+        router.push("/lost-items")
       }, 2000)
     } catch (err: any) {
       setError(err.message || "An error occurred while submitting your report")
@@ -302,14 +314,17 @@ export default function ReportPage() {
                     <div className="flex space-x-2">
                       <Input
                         id="location"
-                        placeholder="e.g., Library, 2nd Floor"
+                        placeholder="e.g., Library, 2nd Floor or click map to select"
                         className="flex-1"
                         {...register("location")}
                       />
-                      <Button type="button" variant="outline" size="icon" title="Pick location on map">
-                        <MapPin className="h-4 w-4" />
-                      </Button>
+                      <MapPicker onLocationSelect={handleLocationSelect} />
                     </div>
+                    {selectedLocation && (
+                      <p className="text-xs text-muted-foreground">
+                        📍 Selected: {selectedLocation.address}
+                      </p>
+                    )}
                     {errors.location && (
                       <p className="text-sm text-destructive">{errors.location.message}</p>
                     )}

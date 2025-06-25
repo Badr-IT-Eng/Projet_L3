@@ -20,7 +20,7 @@ const steps = [
     icon: <Bell className="h-6 w-6" />,
     title: "Get Notified",
     description: "Receive notifications when potential matches are found for your lost item.",
-    image: "/Home_Images/WhatsApp Image 2025-06-24 at 22.10.592.jpeg",
+    image: "/Home_Images/WhatsApp Image 2025-06-24 at 22.10.57.jpeg",
 
   },
   {

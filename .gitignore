@@ -69,17 +69,22 @@ ENV/
 *.cfg
 *.names
 
-# Generated files
+# Generated files (but keep some essential images)
 *.mp4
 *.avi
 *.mov
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.webp
+uploads/**/*.jpg
+uploads/**/*.jpeg
+uploads/**/*.png
+uploads/**/*.gif
+uploads/**/*.bmp
+uploads/**/*.tiff
+uploads/**/*.webp
+detected-objects/**
+detections/**
+strict_detections/**
+ultra_enhanced_detections/**
+ultra_advanced_detections/**
 
 # Logs
 *.log
@@ -115,6 +120,34 @@ spring-backend/.factorypath
 .DS_Store
 Thumbs.db
 
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Process IDs
+*.pid
+
+# Coverage reports
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Home Images (keep only essential ones)
+Home_Images/**/*.jpeg
+!Home_Images/matching.png
+
 # Project specific
 /spring-backend/uploads/
 /spring-backend/target/
@@ -125,14 +158,22 @@ Thumbs.db
 /spring-backend/application-*.properties
 !/spring-backend/src/main/resources/application.properties
 
-# Detection service specific
-/detection-service/__pycache__/
-/detection-service/*.pyc
-/detection-service/models/
-/detection-service/data/
-/detection-service/logs/
-/detection-service/*.log
-/detection-service/.env*
+# Python Detection service specific
+/python-detection/__pycache__/
+/python-detection/*.pyc
+/python-detection/models/
+/python-detection/data/
+/python-detection/logs/
+/python-detection/*.log
+/python-detection/.env*
+/python-detection/venv/
+/python-detection/detections/
+/python-detection/strict_detections/
+/python-detection/ultra_enhanced_detections/
+/python-detection/ultra_advanced_detections/
+/python-detection/advanced_detections/
+/python-detection/single_detections/
+/python-detection/python-detection/
 
 # Environment variables
 .env

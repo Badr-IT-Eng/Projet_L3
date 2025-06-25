@@ -20,6 +20,8 @@ interface LostItem {
   imageUrl: string
   reportedBy: string
   contactInfo: string
+  contactEmail?: string
+  contactPhone?: string
   reward?: string
   status: string
 }
@@ -110,7 +112,9 @@ export default function LostItemsPage() {
           return `http://localhost:8082/api/files/${imgUrl}`;
         })(),
         reportedBy: item.reportedByUsername || 'Anonymous',
-        contactInfo: 'No contact info',
+        contactInfo: item.contactEmail || item.contactPhone || 'No contact info',
+        contactEmail: item.contactEmail,
+        contactPhone: item.contactPhone,
         reward: undefined,
         status: item.status || 'LOST'
       }));
@@ -303,7 +307,7 @@ export default function LostItemsPage() {
                   </CardContent>
                   
                   <CardFooter className="pt-2 px-6 pb-6">
-                    <Link href={`/report?found=${item.id}`} className="w-full">
+                    <Link href={`/contact/${item.id}`} className="w-full">
                       <Button className="w-full h-11" variant="outline">
                         I Found This Item
                       </Button>
