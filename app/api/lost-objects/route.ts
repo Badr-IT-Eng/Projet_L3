@@ -47,6 +47,11 @@ export async function GET(request: NextRequest) {
     });
     
     console.log(`📥 Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Backend error response: ${errorText}`);
+    }
 
     if (!response.ok) {
       console.error(`API responded with status: ${response.status}`);

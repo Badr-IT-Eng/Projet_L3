@@ -76,14 +76,15 @@ export default function MapPage() {
           params.append('query', searchQuery.trim())
         }
         
-        const response = await fetch(`/api/lost-objects?${params.toString()}`)
+        // Temporarily bypass frontend API and call backend directly
+        const response = await fetch(`http://localhost:8082/api/items/public/lost?${params.toString()}`)
         
         if (!response.ok) {
           throw new Error(`Failed to fetch objects: ${response.status}`)
         }
         
         const data = await response.json()
-        const items = data.objects || []
+        const items = data.items || []  // Backend returns 'items' not 'objects'
         
         console.log(`📍 Loaded ${items.length} items for map`)
         
@@ -92,12 +93,12 @@ export default function MapPage() {
           let coordinates = { lat: 0, lng: 0, x: 0, y: 0 }
           
           // Use database coordinates if available
-          if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+          if (item.latitude && item.longitude) {
             coordinates = {
-              lat: item.coordinates.lat,
-              lng: item.coordinates.lng,
-              x: item.coordinates.x || 0,
-              y: item.coordinates.y || 0
+              lat: item.latitude,
+              lng: item.longitude,
+              x: index * 50 + 100, // Generate x coordinate for compatibility
+              y: index * 30 + 120  // Generate y coordinate for compatibility
             }
           }
           // Generate coordinates from location if no coordinates in DB
@@ -115,9 +116,9 @@ export default function MapPage() {
             id: item.id,
             name: item.name || 'Unnamed Item',
             location: item.location || 'Unknown Location',
-            date: item.date || new Date().toISOString().split('T')[0],
-            image: item.image || '/placeholder.svg?height=100&width=100',
-            category: item.category || 'other',
+            date: item.createdAt ? item.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            image: item.imageUrl || '/placeholder.svg?height=100&width=100',
+            category: item.category?.toLowerCase() || 'other',
             coordinates
           }
         })
