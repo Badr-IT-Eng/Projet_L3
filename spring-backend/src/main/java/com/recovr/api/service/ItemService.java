@@ -29,28 +29,64 @@ public class ItemService {
     private static final Logger log = LoggerFactory.getLogger(ItemService.class);
 
     public Page<ItemDto> getAllItems(Pageable pageable, String category, String status, String location, String dateFrom, String dateTo) {
+        return searchItems(pageable, category, status, location, dateFrom, dateTo, null);
+    }
+
+    public Page<ItemDto> searchItems(Pageable pageable, String category, String status, String location, String dateFrom, String dateTo, String query) {
+        log.info("Searching items with - category: {}, status: {}, location: {}, dateFrom: {}, dateTo: {}, query: {}", 
+                category, status, location, dateFrom, dateTo, query);
+        
         Specification<Item> spec = Specification.where(null);
         
-        if (category != null && !category.isEmpty()) {
-            final ItemCategory categoryEnum = ItemCategory.valueOf(category.toUpperCase());
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), categoryEnum));
+        if (category != null && !category.isEmpty() && !"all".equalsIgnoreCase(category)) {
+            try {
+                final ItemCategory categoryEnum = ItemCategory.valueOf(category.toUpperCase());
+                spec = spec.and((root, querySpec, cb) -> cb.equal(root.get("category"), categoryEnum));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid category: {}", category);
+            }
         }
         
         if (status != null && !status.isEmpty()) {
-            final ItemStatus statusEnum = ItemStatus.valueOf(status.toUpperCase());
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), statusEnum));
+            try {
+                final ItemStatus statusEnum = ItemStatus.valueOf(status.toUpperCase());
+                spec = spec.and((root, querySpec, cb) -> cb.equal(root.get("status"), statusEnum));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status: {}", status);
+            }
         }
         
         if (location != null && !location.isEmpty()) {
-            spec = spec.and((root, query, cb) -> 
-                cb.like(cb.lower(root.get("location")), "%" + location.toLowerCase() + "%"));
+            final String locationLower = location.toLowerCase();
+            spec = spec.and((root, querySpec, cb) -> 
+                cb.like(cb.lower(root.get("location")), "%" + locationLower + "%"));
+        }
+        
+        // Enhanced text search across name and description
+        if (query != null && !query.trim().isEmpty()) {
+            final String searchTerm = query.trim().toLowerCase();
+            spec = spec.and((root, querySpec, cb) -> {
+                String[] words = searchTerm.split("\\s+");
+                var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+                
+                // Search in name and description for each word
+                for (String word : words) {
+                    if (word.length() > 1) {
+                        var nameMatch = cb.like(cb.lower(root.get("name")), "%" + word + "%");
+                        var descMatch = cb.like(cb.lower(root.get("description")), "%" + word + "%");
+                        predicates.add(cb.or(nameMatch, descMatch));
+                    }
+                }
+                
+                return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+            });
         }
         
         if (dateFrom != null && !dateFrom.isEmpty()) {
             try {
                 LocalDate startDate = LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE);
                 LocalDateTime startDateTime = startDate.atStartOfDay();
-                spec = spec.and((root, query, cb) -> 
+                spec = spec.and((root, querySpec, cb) -> 
                     cb.greaterThanOrEqualTo(root.get("createdAt"), startDateTime));
             } catch (Exception e) {
                 log.warn("Invalid dateFrom format: {}", dateFrom);
@@ -61,14 +97,16 @@ public class ItemService {
             try {
                 LocalDate endDate = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
                 LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
-                spec = spec.and((root, query, cb) -> 
+                spec = spec.and((root, querySpec, cb) -> 
                     cb.lessThanOrEqualTo(root.get("createdAt"), endDateTime));
             } catch (Exception e) {
                 log.warn("Invalid dateTo format: {}", dateTo);
             }
         }
         
-        return itemRepository.findAll(spec, pageable).map(this::convertToDto);
+        Page<ItemDto> result = itemRepository.findAll(spec, pageable).map(this::convertToDto);
+        log.info("Search returned {} items", result.getTotalElements());
+        return result;
     }
 
     public ItemDto getItemById(Long id) {

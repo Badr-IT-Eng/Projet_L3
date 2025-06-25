@@ -34,7 +34,7 @@ import {
 } from "recharts"
 import { CalendarIcon, Download, Share2 } from "lucide-react"
 
-// Mock data for analytics
+// Demo data for analytics dashboard - Replace with real API data
 const MONTHLY_DETECTIONS = [
   { name: "Jan", bags: 65, electronics: 42, accessories: 28, other: 15 },
   { name: "Feb", bags: 59, electronics: 39, accessories: 32, other: 18 },

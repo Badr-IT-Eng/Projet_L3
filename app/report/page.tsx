@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { format } from "date-fns"
 import { CalendarIcon, MapPin, Upload, Loader2, X } from "lucide-react"
 import { PageContainer } from "@/components/page-container"
+import { motion } from "framer-motion"
 
 // Form validation schema
 const reportSchema = z.object({
@@ -186,210 +187,217 @@ export default function ReportPage() {
           </Alert>
         )}
 
-        <Card className="transform-gpu">
-          <CardHeader>
-            <CardTitle>Item Details</CardTitle>
-            <CardDescription>
-              Provide as much information as possible to help people find your lost item
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="transform-gpu"
+        >
+          <Card className="transform-gpu">
+            <CardHeader>
+              <CardTitle>Item Details</CardTitle>
+              <CardDescription>
+                Provide as much information as possible to help people find your lost item
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Item Name</Label>
+                      <Input
+                        id="name"
+                        placeholder="e.g., Black Backpack"
+                        {...register("name")}
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-destructive">{errors.name.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category</Label>
+                      <Select
+                        onValueChange={(value) => setValue("category", value)}
+                        defaultValue=""
+                      >
+                        <SelectTrigger id="category">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bag">Bag</SelectItem>
+                          <SelectItem value="electronics">Electronics</SelectItem>
+                          <SelectItem value="accessory">Accessory</SelectItem>
+                          <SelectItem value="clothing">Clothing</SelectItem>
+                          <SelectItem value="document">Document</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.category && (
+                        <p className="text-sm text-destructive">{errors.category.message}</p>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="name">Item Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="e.g., Black Backpack"
-                      {...register("name")}
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe the item in detail (color, brand, distinguishing features, etc.)"
+                      rows={4}
+                      {...register("description")}
                     />
-                    {errors.name && (
-                      <p className="text-sm text-destructive">{errors.name.message}</p>
+                    {errors.description && (
+                      <p className="text-sm text-destructive">{errors.description.message}</p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select
-                      onValueChange={(value) => setValue("category", value)}
-                      defaultValue=""
-                    >
-                      <SelectTrigger id="category">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bag">Bag</SelectItem>
-                        <SelectItem value="electronics">Electronics</SelectItem>
-                        <SelectItem value="accessory">Accessory</SelectItem>
-                        <SelectItem value="clothing">Clothing</SelectItem>
-                        <SelectItem value="document">Document</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.category && (
-                      <p className="text-sm text-destructive">{errors.category.message}</p>
-                    )}
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe the item in detail (color, brand, distinguishing features, etc.)"
-                    rows={4}
-                    {...register("description")}
-                  />
-                  {errors.description && (
-                    <p className="text-sm text-destructive">{errors.description.message}</p>
-                  )}
-                </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Date Lost</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {date ? format(date, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {errors.date && (
+                        <p className="text-sm text-destructive">{errors.date.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="time">Approximate Time</Label>
+                      <Input
+                        id="time"
+                        type="time"
+                        {...register("time")}
+                      />
+                      {errors.time && (
+                        <p className="text-sm text-destructive">{errors.time.message}</p>
+                      )}
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Date Lost</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {date ? format(date, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={setDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {errors.date && (
-                      <p className="text-sm text-destructive">{errors.date.message}</p>
+                    <Label htmlFor="location">Last Known Location</Label>
+                    <div className="flex space-x-2">
+                      <Input
+                        id="location"
+                        placeholder="e.g., Library, 2nd Floor"
+                        className="flex-1"
+                        {...register("location")}
+                      />
+                      <Button type="button" variant="outline" size="icon" title="Pick location on map">
+                        <MapPin className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {errors.location && (
+                      <p className="text-sm text-destructive">{errors.location.message}</p>
                     )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="time">Approximate Time</Label>
+                    <Label htmlFor="image">Upload Image</Label>
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 relative">
+                      {uploadedImage ? (
+                        <div className="relative w-full h-48">
+                          <img
+                            src={uploadedImage}
+                            alt="Uploaded item"
+                            className="w-full h-full object-contain"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="absolute top-2 right-2"
+                            onClick={() => {
+                              setUploadedImage(null)
+                              setValue("image", "")
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {isUploading ? (
+                            <div className="flex flex-col items-center justify-center py-4">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                              <p className="text-sm text-muted-foreground">Uploading image...</p>
+                            </div>
+                          ) : (
+                            <>
+                              <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                              <p className="text-sm text-muted-foreground mb-2">Drag and drop or click to upload</p>
+                              <p className="text-xs text-muted-foreground">PNG, JPG or JPEG (max. 5MB)</p>
+                              <Input
+                                id="image"
+                                type="file"
+                                accept="image/*"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onChange={handleImageUpload}
+                              />
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {errors.image && (
+                      <p className="text-sm text-destructive">{errors.image.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactInformation">Contact Information (Optional)</Label>
                     <Input
-                      id="time"
-                      type="time"
-                      {...register("time")}
+                      id="contactInformation"
+                      placeholder="Email or phone number where you can be reached"
+                      {...register("contactInformation")}
+                      defaultValue={session?.user?.email || ""}
                     />
-                    {errors.time && (
-                      <p className="text-sm text-destructive">{errors.time.message}</p>
-                    )}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Last Known Location</Label>
-                  <div className="flex space-x-2">
-                    <Input
-                      id="location"
-                      placeholder="e.g., Library, 2nd Floor"
-                      className="flex-1"
-                      {...register("location")}
-                    />
-                    <Button type="button" variant="outline" size="icon" title="Pick location on map">
-                      <MapPin className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {errors.location && (
-                    <p className="text-sm text-destructive">{errors.location.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image">Upload Image</Label>
-                  <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 relative">
-                    {uploadedImage ? (
-                      <div className="relative w-full h-48">
-                        <img
-                          src={uploadedImage}
-                          alt="Uploaded item"
-                          className="w-full h-full object-contain"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="absolute top-2 right-2"
-                          onClick={() => {
-                            setUploadedImage(null)
-                            setValue("image", "")
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
+                <CardFooter className="px-0 pt-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting || isUploading || success}
+                  >
+                    {isSubmitting ? (
                       <>
-                        {isUploading ? (
-                          <div className="flex flex-col items-center justify-center py-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                            <p className="text-sm text-muted-foreground">Uploading image...</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground mb-2">Drag and drop or click to upload</p>
-                            <p className="text-xs text-muted-foreground">PNG, JPG or JPEG (max. 5MB)</p>
-                            <Input
-                              id="image"
-                              type="file"
-                              accept="image/*"
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              onChange={handleImageUpload}
-                            />
-                          </>
-                        )}
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
                       </>
+                    ) : (
+                      "Submit Report"
                     )}
-                  </div>
-                  {errors.image && (
-                    <p className="text-sm text-destructive">{errors.image.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contactInformation">Contact Information (Optional)</Label>
-                  <Input
-                    id="contactInformation"
-                    placeholder="Email or phone number where you can be reached"
-                    {...register("contactInformation")}
-                    defaultValue={session?.user?.email || ""}
-                  />
-                </div>
-              </div>
-
-              <CardFooter className="px-0 pt-4">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting || isUploading || success}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit Report"
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </CardContent>
-        </Card>
+                  </Button>
+                </CardFooter>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </PageContainer>
   )

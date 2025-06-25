@@ -29,11 +29,11 @@ export function Testimonials() {
       <div className="container">
         <div className="flex flex-col items-center justify-center space-y-4 text-center md:mx-auto md:max-w-3xl">
           <div className="inline-flex items-center rounded-full border bg-background/50 px-3 py-1 text-sm font-semibold">
-            <span className="text-primary">User Experiences</span>
+            <span className="text-primary">Demo User Experiences</span>
           </div>
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">What Our Users Say</h2>
           <p className="max-w-[700px] text-muted-foreground md:text-lg/relaxed">
-            Thousands of people have successfully recovered their lost items using our system. Here are some of their stories.
+            Sample testimonials showcasing the potential user experience with our recovery system.
           </p>
         </div>
 

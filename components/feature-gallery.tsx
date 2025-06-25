@@ -47,7 +47,7 @@ export function FeatureGallery() {
                   src="/report-step.svg" 
                   alt="Reporting lost item on RECOVR"
                   fill
-                  className="object-cover"
+                  className="object-cover rounded-xl shadow-xl border border-border"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6 text-white">
                   <h3 className="text-xl font-bold mb-2">Report Your Lost Item</h3>
@@ -64,7 +64,7 @@ export function FeatureGallery() {
                       src="/report-detail.svg"
                       alt="Adding item details on RECOVR" 
                       fill 
-                      className="object-cover"
+                      className="object-cover rounded-xl shadow-xl border border-border"
                     />
                   </CardContent>
                 </Card>
@@ -74,7 +74,7 @@ export function FeatureGallery() {
                       src="/mobile-upload.svg"
                       alt="Mobile reporting on RECOVR" 
                       fill 
-                      className="object-cover"
+                      className="object-cover rounded-xl shadow-xl border border-border"
                     />
                   </CardContent>
                 </Card>
@@ -87,7 +87,7 @@ export function FeatureGallery() {
                   src="/matching-step.svg" 
                   alt="AI matching process" 
                   fill 
-                  className="object-cover"
+                  className="object-cover rounded-xl shadow-xl border border-border"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6 text-white">
                   <h3 className="text-xl font-bold mb-2">AI-Powered Matching</h3>
@@ -104,7 +104,7 @@ export function FeatureGallery() {
                       src="/ai-analysis.svg"
                       alt="AI vision analysis" 
                       fill 
-                      className="object-cover"
+                      className="object-cover rounded-xl shadow-xl border border-border"
                     />
                   </CardContent>
                 </Card>
@@ -114,7 +114,7 @@ export function FeatureGallery() {
                       src="/matching-results.svg"
                       alt="Item matching results" 
                       fill 
-                      className="object-cover"
+                      className="object-cover rounded-xl shadow-xl border border-border"
                     />
                   </CardContent>
                 </Card>
@@ -127,7 +127,7 @@ export function FeatureGallery() {
                   src="/recover-step.svg" 
                   alt="Recovering lost item" 
                   fill 
-                  className="object-cover"
+                  className="object-cover rounded-xl shadow-xl border border-border"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6 text-white">
                   <h3 className="text-xl font-bold mb-2">Recover Your Item</h3>
@@ -144,7 +144,7 @@ export function FeatureGallery() {
                       src="/notify-step.svg"
                       alt="Notification on RECOVR" 
                       fill 
-                      className="object-cover"
+                      className="object-cover rounded-xl shadow-xl border border-border"
                     />
                   </CardContent>
                 </Card>
@@ -154,7 +154,7 @@ export function FeatureGallery() {
                       src="/handover.svg"
                       alt="Item handover" 
                       fill 
-                      className="object-cover"
+                      className="object-cover rounded-xl shadow-xl border border-border"
                     />
                   </CardContent>
                 </Card>

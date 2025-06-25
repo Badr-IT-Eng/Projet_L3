@@ -108,6 +108,7 @@ public class WebSecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/items/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items/public/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items/search").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/items/search").permitAll()
                 
                 // Item CRUD - allow public item creation, require auth for other operations (general patterns come after specific ones)
                 .requestMatchers(HttpMethod.POST, "/api/items").permitAll()

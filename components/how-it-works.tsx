@@ -8,19 +8,19 @@ const steps = [
     icon: <Camera className="h-6 w-6" />,
     title: "Report Your Lost Item",
     description: "Fill out a simple form with details about your lost item and upload a photo if available.",
-    image: "/placeholder.svg",
+    image: "/Home_Images/WhatsApp Image 2025-06-24 at 22.10.55.jpeg",
   },
   {
     icon: <Search className="h-6 w-6" />,
     title: "AI-Powered Matching",
     description: "Our system uses advanced image recognition to match your lost item with found objects.",
-    image: "/placeholder.svg",
+    image: "/Home_Images/matching.png",
   },
   {
     icon: <Bell className="h-6 w-6" />,
     title: "Get Notified",
     description: "Receive notifications when potential matches are found for your lost item.",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
   },
   {
     icon: <ThumbsUp className="h-6 w-6" />,

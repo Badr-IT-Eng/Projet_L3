@@ -24,6 +24,12 @@ public class MatchingService {
     @Autowired
     private ItemService itemService;
 
+    // Configurable match threshold (default 0.4)
+    private double matchThreshold = 0.4;
+    public void setMatchThreshold(double threshold) {
+        this.matchThreshold = threshold;
+    }
+
     /**
      * Find potential matches for lost items based on found items
      */
@@ -45,7 +51,7 @@ public class MatchingService {
         for (Item lostItem : lostItems) {
             for (Item foundItem : foundItems) {
                 double matchScore = calculateMatchScore(lostItem, foundItem);
-                if (matchScore >= 0.4) { // Only include matches with at least 40% similarity
+                if (matchScore >= matchThreshold) {
                     MatchDto match = createMatch(lostItem, foundItem, matchScore);
                     matches.add(match);
                 }
@@ -75,7 +81,7 @@ public class MatchingService {
         
         for (Item candidateItem : candidateItems) {
             double matchScore = calculateMatchScore(item, candidateItem);
-            if (matchScore >= 0.4) {
+            if (matchScore >= matchThreshold) {
                 MatchDto match = item.getStatus() == ItemStatus.LOST ? 
                     createMatch(item, candidateItem, matchScore) :
                     createMatch(candidateItem, item, matchScore);
@@ -96,36 +102,47 @@ public class MatchingService {
 
     private double calculateMatchScore(Item item1, Item item2) {
         double score = 0.0;
-        double maxScore = 0.0;
-        
-        // Category match (30% weight)
-        maxScore += 0.3;
+        double maxScore = 1.0;
+
+        // Category match (25% weight)
         if (item1.getCategory() != null && item1.getCategory().equals(item2.getCategory())) {
-            score += 0.3;
+            score += 0.25;
+        } else if (item1.getCategory() != null && item2.getCategory() != null && areCategoriesRelated(item1.getCategory().name(), item2.getCategory().name())) {
+            score += 0.05;
         }
-        
+
+        // Name/title similarity (10% weight, max of Jaccard/Levenshtein)
+        double nameSim = Math.max(
+            calculateNameSimilarity(item1.getName(), item2.getName()),
+            calculateLevenshteinSimilarity(item1.getName(), item2.getName())
+        );
+        score += 0.10 * nameSim;
+
         // Location proximity (25% weight)
-        maxScore += 0.25;
+        double locationSim = 0.0;
         if (item1.getLocation() != null && item2.getLocation() != null) {
-            double locationSimilarity = calculateLocationSimilarity(item1.getLocation(), item2.getLocation());
-            score += 0.25 * locationSimilarity;
+            locationSim = calculateLocationSimilarity(item1.getLocation(), item2.getLocation());
         }
-        
-        // Date proximity (20% weight) - items should be reported within reasonable time frame
-        maxScore += 0.2;
+        score += 0.25 * locationSim;
+
+        // Date proximity (15% weight)
+        double dateSim = 0.0;
         if (item1.getCreatedAt() != null && item2.getCreatedAt() != null) {
-            double dateSimilarity = calculateDateSimilarity(item1.getCreatedAt(), item2.getCreatedAt());
-            score += 0.2 * dateSimilarity;
+            dateSim = calculateDateSimilarity(item1.getCreatedAt(), item2.getCreatedAt());
         }
-        
-        // Description similarity (25% weight)
-        maxScore += 0.25;
-        if (item1.getDescription() != null && item2.getDescription() != null) {
-            double descriptionSimilarity = calculateDescriptionSimilarity(item1.getDescription(), item2.getDescription());
-            score += 0.25 * descriptionSimilarity;
-        }
-        
-        return maxScore > 0 ? score / maxScore : 0.0;
+        score += 0.15 * dateSim;
+
+        // Description similarity (20% weight, max of Jaccard/Levenshtein)
+        double descSim = Math.max(
+            calculateJaccardSimilarity(item1.getDescription(), item2.getDescription()),
+            calculateLevenshteinSimilarity(item1.getDescription(), item2.getDescription())
+        );
+        score += 0.20 * descSim;
+
+        // Future: Add image similarity (if image features available)
+        // Future: Add geo-matching (if latitude/longitude available)
+
+        return Math.max(0.0, Math.min(score / maxScore, 1.0));
     }
 
     private double calculateLocationSimilarity(String loc1, String loc2) {
@@ -240,5 +257,87 @@ public class MatchingService {
         }
         
         return reasons.isEmpty() ? "Correspondance potentielle" : String.join(", ", reasons);
+    }
+
+    // --- New/Improved Helper Methods ---
+    private boolean areCategoriesRelated(String cat1, String cat2) {
+        // Simple example: treat BAGS and BACKPACKS as related
+        cat1 = cat1.toUpperCase();
+        cat2 = cat2.toUpperCase();
+        if ((cat1.contains("BAG") && cat2.contains("BAG")) || (cat1.contains("BOOK") && cat2.contains("BOOK"))) return true;
+        // Add more logic as needed
+        return false;
+    }
+
+    private double calculateNameSimilarity(String name1, String name2) {
+        if (name1 == null || name2 == null) return 0.0;
+        name1 = name1.toLowerCase().trim();
+        name2 = name2.toLowerCase().trim();
+        if (name1.equals(name2)) return 1.0;
+        if (name1.contains(name2) || name2.contains(name1)) return 0.8;
+        // Word overlap
+        String[] words1 = name1.split("\\s+");
+        String[] words2 = name2.split("\\s+");
+        int common = 0;
+        for (String w1 : words1) for (String w2 : words2) if (w1.equals(w2) && w1.length() > 2) common++;
+        if (common > 0) return 0.5 + 0.5 * common / Math.max(words1.length, words2.length);
+        return 0.0;
+    }
+
+    private double calculateJaccardSimilarity(String s1, String s2) {
+        if (s1 == null || s2 == null) return 0.0;
+        String[] set1 = s1.toLowerCase().split("\\W+");
+        String[] set2 = s2.toLowerCase().split("\\W+");
+        java.util.Set<String> union = new java.util.HashSet<>();
+        java.util.Set<String> intersection = new java.util.HashSet<>();
+        for (String w : set1) union.add(w);
+        for (String w : set2) if (!union.add(w)) intersection.add(w);
+        if (union.isEmpty()) return 0.0;
+        return (double) intersection.size() / union.size();
+    }
+
+    private double calculateGeoLocationSimilarity(Double lat1, Double lon1, Double lat2, Double lon2) {
+        // Haversine formula for distance in km
+        final int R = 6371;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        double distance = R * c;
+        // Score: 1.0 if <1km, 0.8 if <5km, 0.5 if <20km, 0.2 if <100km, else 0
+        if (distance < 1) return 1.0;
+        if (distance < 5) return 0.8;
+        if (distance < 20) return 0.5;
+        if (distance < 100) return 0.2;
+        return 0.0;
+    }
+
+    // Levenshtein similarity (normalized)
+    private double calculateLevenshteinSimilarity(String s1, String s2) {
+        if (s1 == null || s2 == null) return 0.0;
+        s1 = s1.toLowerCase().trim();
+        s2 = s2.toLowerCase().trim();
+        int maxLen = Math.max(s1.length(), s2.length());
+        if (maxLen == 0) return 1.0;
+        int dist = levenshteinDistance(s1, s2);
+        return 1.0 - ((double) dist / maxLen);
+    }
+
+    // Levenshtein distance implementation
+    private int levenshteinDistance(String s1, String s2) {
+        int[] costs = new int[s2.length() + 1];
+        for (int j = 0; j < costs.length; j++) {
+            costs[j] = j;
+        }
+        for (int i = 1; i <= s1.length(); i++) {
+            costs[0] = i;
+            int nw = i - 1;
+            for (int j = 1; j <= s2.length(); j++) {
+                int cj = Math.min(1 + Math.min(costs[j], costs[j - 1]), s1.charAt(i - 1) == s2.charAt(j - 1) ? nw : nw + 1);
+                nw = costs[j];
+                costs[j] = cj;
+            }
+        }
+        return costs[s2.length()];
     }
 }

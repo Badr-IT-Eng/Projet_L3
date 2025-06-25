@@ -12,82 +12,130 @@ import dynamic from "next/dynamic"
 // Import MapViewer component dynamically to avoid SSR issues
 const MapViewer = dynamic(() => import("@/components/map-viewer"), { ssr: false })
 
-// Mock data for initial development
-const MOCK_OBJECT_LOCATIONS = [
-  {
-    id: 1,
-    name: "Black Backpack",
-    location: "Library, 2nd Floor",
-    date: "2025-05-15",
-    image: "/placeholder.svg?height=100&width=100",
-    category: "bag",
-    coordinates: {
-      lat: 40.7128,
-      lng: -74.006,
-      x: 150,
-      y: 120,
-    },
-  },
-  {
-    id: 2,
-    name: "Blue Smartphone",
-    location: "Cafeteria",
-    date: "2025-05-16",
-    image: "/placeholder.svg?height=100&width=100",
-    category: "electronics",
-    coordinates: {
-      lat: 40.7138,
-      lng: -74.013,
-      x: 320,
-      y: 280,
-    },
-  },
-  {
-    id: 3,
-    name: "Red Wallet",
-    location: "Gym Area",
-    date: "2025-05-17",
-    image: "/placeholder.svg?height=100&width=100",
-    category: "accessory",
-    coordinates: {
-      lat: 40.7148,
-      lng: -74.001,
-      x: 450,
-      y: 380,
-    },
-  },
-]
+// Default coordinates for items without location data
+const DEFAULT_COORDINATES = {
+  lat: 40.7128, lng: -74.006 // NYC coordinates as fallback
+}
+
+// Function to generate realistic coordinates based on location
+function generateCoordinatesFromLocation(location: string, index: number): { lat: number; lng: number } {
+  const baseCoords = DEFAULT_COORDINATES
+  
+  // Create location-based coordinate variations
+  const locationMap: Record<string, { lat: number; lng: number }> = {
+    'library': { lat: baseCoords.lat + 0.001, lng: baseCoords.lng - 0.002 },
+    'cafeteria': { lat: baseCoords.lat - 0.001, lng: baseCoords.lng + 0.003 },
+    'gym': { lat: baseCoords.lat + 0.002, lng: baseCoords.lng + 0.001 },
+    'parking': { lat: baseCoords.lat - 0.002, lng: baseCoords.lng - 0.001 },
+    'entrance': { lat: baseCoords.lat + 0.0005, lng: baseCoords.lng - 0.0005 },
+    'hall': { lat: baseCoords.lat + 0.0015, lng: baseCoords.lng + 0.002 },
+    'lab': { lat: baseCoords.lat - 0.0005, lng: baseCoords.lng - 0.003 },
+    'field': { lat: baseCoords.lat + 0.0025, lng: baseCoords.lng - 0.0015 },
+    'auditorium': { lat: baseCoords.lat - 0.0015, lng: baseCoords.lng + 0.0005 },
+    'office': { lat: baseCoords.lat + 0.0008, lng: baseCoords.lng + 0.0008 },
+  }
+  
+  // Find matching location keyword
+  const locationLower = location.toLowerCase()
+  for (const [keyword, coords] of Object.entries(locationMap)) {
+    if (locationLower.includes(keyword)) {
+      return coords
+    }
+  }
+  
+  // Generate semi-random coordinates based on index if no match
+  const offset = (index * 0.0003) % 0.005
+  return {
+    lat: baseCoords.lat + (offset * (index % 2 === 0 ? 1 : -1)),
+    lng: baseCoords.lng + (offset * (index % 3 === 0 ? 1 : -1))
+  }
+}
 
 export default function MapPage() {
-  const [objects, setObjects] = useState(MOCK_OBJECT_LOCATIONS)
+  const [objects, setObjects] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [error, setError] = useState<string | null>(null)
   
-  // In a real app, fetch from API
+  // Fetch real data from the lost objects API
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchLostObjects = async () => {
       setLoading(true)
+      setError(null)
       
       try {
-        // Simulate API call
-        // In production, replace with real API call:
-        // const response = await fetch('/api/lost-objects?status=found');
-        // const data = await response.json();
-        // setObjects(data.objects);
+        console.log('🗺️ Fetching lost objects for map...')
         
-        // For now, just simulate a delay
-        setTimeout(() => {
-          setLoading(false)
-        }, 500)
+        const params = new URLSearchParams()
+        params.append('size', '100') // Get more items for the map
+        if (selectedCategory !== 'all') {
+          params.append('category', selectedCategory.toUpperCase())
+        }
+        if (searchQuery.trim()) {
+          params.append('query', searchQuery.trim())
+        }
+        
+        const response = await fetch(`/api/lost-objects?${params.toString()}`)
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch objects: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        const items = data.objects || []
+        
+        console.log(`📍 Loaded ${items.length} items for map`)
+        
+        // Transform items to include proper coordinates
+        const transformedObjects = items.map((item: any, index: number) => {
+          let coordinates = { lat: 0, lng: 0, x: 0, y: 0 }
+          
+          // Use database coordinates if available
+          if (item.coordinates && item.coordinates.lat && item.coordinates.lng) {
+            coordinates = {
+              lat: item.coordinates.lat,
+              lng: item.coordinates.lng,
+              x: item.coordinates.x || 0,
+              y: item.coordinates.y || 0
+            }
+          }
+          // Generate coordinates from location if no coordinates in DB
+          else {
+            const generated = generateCoordinatesFromLocation(item.location || '', index)
+            coordinates = {
+              lat: generated.lat,
+              lng: generated.lng,
+              x: index * 50 + 100, // Generate x coordinate
+              y: index * 30 + 120  // Generate y coordinate
+            }
+          }
+          
+          return {
+            id: item.id,
+            name: item.name || 'Unnamed Item',
+            location: item.location || 'Unknown Location',
+            date: item.date || new Date().toISOString().split('T')[0],
+            image: item.image || '/placeholder.svg?height=100&width=100',
+            category: item.category || 'other',
+            coordinates
+          }
+        })
+        
+        setObjects(transformedObjects)
+        
       } catch (error) {
-        console.error("Error fetching object locations:", error)
+        console.error('❌ Error fetching lost objects:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load map data')
+        // Set empty array on error to show empty map
+        setObjects([])
+      } finally {
         setLoading(false)
       }
     }
     
-    fetchData()
-  }, [])
+    fetchLostObjects()
+  }, [selectedCategory, searchQuery]) // Refetch when category or search changes
   
   // Filter objects by category and search query
   const filteredObjects = objects.filter(obj => {
@@ -112,23 +160,25 @@ export default function MapPage() {
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle>Filters</CardTitle>
-                <CardDescription>Narrow down your search</CardDescription>
+                <CardTitle>Map Filters</CardTitle>
+                <CardDescription>Filter items shown on the map</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category</label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={loading}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="bag">Bags</SelectItem>
+                      <SelectItem value="bags">Bags</SelectItem>
                       <SelectItem value="electronics">Electronics</SelectItem>
-                      <SelectItem value="accessory">Accessories</SelectItem>
+                      <SelectItem value="accessories">Accessories</SelectItem>
                       <SelectItem value="clothing">Clothing</SelectItem>
-                      <SelectItem value="document">Documents</SelectItem>
+                      <SelectItem value="documents">Documents</SelectItem>
+                      <SelectItem value="jewelry">Jewelry</SelectItem>
+                      <SelectItem value="keys">Keys</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -144,7 +194,24 @@ export default function MapPage() {
                       className="pl-8"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      disabled={loading}
                     />
+                  </div>
+                </div>
+                
+                {/* Real-time stats */}
+                <div className="pt-2 border-t">
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                      <span>Total Items:</span>
+                      <span className="font-medium">{objects.length}</span>
+                    </div>
+                    {loading && (
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading...</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -157,6 +224,7 @@ export default function MapPage() {
                     setSelectedCategory("all")
                     setSearchQuery("")
                   }}
+                  disabled={loading}
                 >
                   Reset Filters
                 </Button>
@@ -170,30 +238,60 @@ export default function MapPage() {
                 </CardHeader>
                 <CardContent className="p-4 max-h-[400px] overflow-y-auto">
                   {loading ? (
-                    <div className="text-center py-8">Loading...</div>
+                    <div className="text-center py-8">
+                      <div className="inline-flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading real data...</span>
+                      </div>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-8 text-red-600">
+                      <div className="space-y-2">
+                        <div>Failed to load objects</div>
+                        <div className="text-sm text-muted-foreground">{error}</div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => window.location.reload()}
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
                   ) : filteredObjects.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No objects found matching your criteria
+                      <div className="space-y-2">
+                        <MapPin className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                        <div>No objects found matching your criteria</div>
+                        <div className="text-sm">Try adjusting your filters</div>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {filteredObjects.map((obj) => (
                         <div
                           key={obj.id}
-                          className="flex items-center p-2 border rounded-md hover:bg-muted transition cursor-pointer"
+                          className="flex items-center p-2 border rounded-md hover:bg-muted transition cursor-pointer group"
                         >
-                          <div className="w-12 h-12 rounded-md mr-3 overflow-hidden">
+                          <div className="w-12 h-12 rounded-md mr-3 overflow-hidden bg-gray-100">
                             <img
                               src={obj.image}
                               alt={obj.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.src = '/placeholder.svg?height=48&width=48'
+                              }}
                             />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium">{obj.name}</h4>
+                            <h4 className="font-medium group-hover:text-blue-600 transition-colors">{obj.name}</h4>
                             <div className="flex items-center text-xs text-muted-foreground">
                               <MapPin className="h-3 w-3 mr-1" />
                               {obj.location}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {obj.date}
                             </div>
                           </div>
                         </div>
@@ -222,8 +320,29 @@ export default function MapPage() {
               <TabsContent value="map">
                 <Card>
                   <CardContent className="p-0 relative overflow-hidden">
-                    <div className="w-full h-[600px]">
-                      {!loading && (
+                    <div className="w-full h-[600px] relative">
+                      {loading ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                          <div className="text-center space-y-4">
+                            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <div className="text-lg font-medium">Loading Map Data</div>
+                            <div className="text-sm text-muted-foreground">Fetching lost objects from database...</div>
+                          </div>
+                        </div>
+                      ) : error ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                          <div className="text-center space-y-4">
+                            <div className="text-red-600">
+                              <MapPin className="h-12 w-12 mx-auto mb-2" />
+                              <div className="text-lg font-medium">Map Loading Error</div>
+                              <div className="text-sm">{error}</div>
+                            </div>
+                            <Button onClick={() => window.location.reload()}>
+                              Retry Loading Map
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
                         <MapViewer objects={filteredObjects} />
                       )}
                     </div>

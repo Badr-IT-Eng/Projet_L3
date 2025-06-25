@@ -9,7 +9,6 @@ import { Menu, Search, MapPin } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
-import { NotificationDropdown } from "@/components/ui/notification-dropdown"
 import { useSession, signOut } from "next-auth/react"
 import { Logo } from "@/components/ui/logo"
 
@@ -18,6 +17,7 @@ const mainNavItems = [
   { title: "Lost Items", href: "/lost-items" },
   { title: "Report Lost Item", href: "/report" },
   { title: "Find Items", href: "/search", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
+  { title: "Detection", href: "/detection" },
   { title: "Map", href: "/map" },
 ]
 
@@ -115,15 +115,18 @@ export function Navbar({ className }: { className?: string }) {
             <MainNav />
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800">
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800" aria-label="Search items" asChild>
+              <Link href="/search">
+                <Search className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+              </Link>
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800">
-              <MapPin className="h-5 w-5" />
-              <span className="sr-only">Map</span>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800" aria-label="View map" asChild>
+              <Link href="/map">
+                <MapPin className="h-5 w-5" />
+                <span className="sr-only">Map</span>
+              </Link>
             </Button>
-            <NotificationDropdown className="mr-2 hidden sm:flex" />
             <ThemeToggle />
             <div className="hidden md:flex md:gap-3 ml-2">
               {isAuthenticated ? (

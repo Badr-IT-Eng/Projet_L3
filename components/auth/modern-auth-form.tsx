@@ -322,7 +322,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/10 to-accent/10 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
       <FloatingShapes />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -336,12 +336,12 @@ export function ModernAuthForm({ type }: AuthFormProps) {
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4"
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full mb-4"
           >
             {type === "signin" ? (
-              <KeyRound className="h-8 w-8 text-white" />
+              <KeyRound className="h-8 w-8 text-primary-foreground" />
             ) : (
-              <UserCheck className="h-8 w-8 text-white" />
+              <UserCheck className="h-8 w-8 text-primary-foreground" />
             )}
           </motion.div>
           <motion.h1
@@ -387,7 +387,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <Card className="backdrop-blur-sm bg-white/70 border-0 shadow-xl mx-auto">
+          <Card className="backdrop-blur-sm bg-white/70 border-0 shadow-xl mx-auto rounded-2xl">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg sm:text-xl font-semibold text-center">
                 {getStepTitle()}
@@ -500,7 +500,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                             required
                             disabled={loading || lockoutStatus?.locked}
                             placeholder={type === "signin" ? "Enter username or email" : "Choose a username"}
-                            className="pl-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                            className="pl-10 h-12 border-primary focus:border-primary focus:ring-primary"
                           />
                         </div>
                       </div>
@@ -521,7 +521,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 required
                                 disabled={loading}
                                 placeholder="Enter your email"
-                                className="pl-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                                className="pl-10 h-12 border-primary focus:border-primary focus:ring-primary"
                               />
                             </div>
                           </div>
@@ -537,7 +537,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 onChange={handleChange}
                                 disabled={loading}
                                 placeholder="First name"
-                                className="h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                                className="h-12 border-primary focus:border-primary focus:ring-primary"
                               />
                             </div>
                             <div className="space-y-2">
@@ -550,7 +550,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 onChange={handleChange}
                                 disabled={loading}
                                 placeholder="Last name"
-                                className="h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                                className="h-12 border-primary focus:border-primary focus:ring-primary"
                               />
                             </div>
                           </div>
@@ -567,7 +567,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                                 onChange={handleChange}
                                 disabled={loading}
                                 placeholder="Enter your phone number"
-                                className="pl-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                                className="pl-10 h-12 border-primary focus:border-primary focus:ring-primary"
                               />
                             </div>
                           </div>
@@ -589,7 +589,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                               required
                               disabled={loading || lockoutStatus?.locked}
                               placeholder="Enter your password"
-                              className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                              className="pl-10 pr-10 h-12 border-primary focus:border-primary focus:ring-primary"
                             />
                             <Button
                               type="button"
@@ -632,7 +632,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                             required
                             disabled={loading}
                             placeholder="Create a secure password"
-                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                            className="pl-10 pr-10 h-12 border-primary focus:border-primary focus:ring-primary"
                           />
                           <Button
                             type="button"
@@ -719,7 +719,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                             required
                             disabled={loading}
                             placeholder="Confirm your password"
-                            className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary focus:ring-primary"
+                            className="pl-10 pr-10 h-12 border-primary focus:border-primary focus:ring-primary"
                           />
                           <Button
                             type="button"
@@ -757,7 +757,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                     <Button
                       type="button"
                       onClick={nextStep}
-                      className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary-focus hover:to-accent-focus text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary-focus hover:to-accent-focus text-primary-foreground font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                       disabled={!formData.username || !formData.email}
                     >
                       Continue
@@ -777,7 +777,7 @@ export function ModernAuthForm({ type }: AuthFormProps) {
                       )}
                       <Button
                         type="submit"
-                        className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary-focus hover:to-accent-focus text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary-focus hover:to-accent-focus text-primary-foreground font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={loading || !isFormValid()}
                       >
                         {loading ? (
