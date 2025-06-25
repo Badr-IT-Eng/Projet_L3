@@ -56,10 +56,10 @@ export function HeroSection() {
                 </GradientButton>
               </Link>
               <Link href="/search">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto group text-base px-5 py-4 shadow-soft border-gradient dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-800">
-                  Search for Item
-                  <Search className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+                  <GradientButton size="lg" variant="dark" className="w-full sm:w-auto text-base px-5 py-4 shadow-soft btn-3d">
+              Search for Item
+              <Search className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </GradientButton>
               </Link>
             </div>
           </div>

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   eslint: {
     // Temporarily ignore during builds until all imports are fixed
     ignoreDuringBuilds: true,
@@ -25,7 +26,7 @@ const nextConfig = {
       },
     ],
   },
-  reactStrictMode: true,
+  reactStrictMode: false,
   experimental: {
     scrollRestoration: true,
     optimizePackageImports: [

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -50,10 +50,30 @@ function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, 
 
 export default function MapComponent({ center, onLocationSelect }: MapComponentProps) {
   const [isClient, setIsClient] = useState(false)
+  const [mapKey, setMapKey] = useState(Date.now())
+  const mapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  useEffect(() => {
+    // Generate a new key when center changes to force complete remount
+    setMapKey(Date.now())
+  }, [center.lat, center.lng])
+
+  useEffect(() => {
+    // Cleanup function to ensure map container is properly cleaned up
+    return () => {
+      if (mapRef.current) {
+        // Remove any existing map instance
+        const mapContainer = mapRef.current.querySelector('.leaflet-container')
+        if (mapContainer) {
+          mapContainer.remove()
+        }
+      }
+    }
+  }, [mapKey])
 
   if (!isClient) {
     return (
@@ -64,11 +84,21 @@ export default function MapComponent({ center, onLocationSelect }: MapComponentP
   }
 
   return (
-    <div className="w-full h-[400px] rounded-lg overflow-hidden border">
+    <div ref={mapRef} className="w-full h-[400px] rounded-lg overflow-hidden border">
       <MapContainer
+        key={`map-${mapKey}`}
         center={[center.lat, center.lng]}
         zoom={13}
         style={{ height: "100%", width: "100%" }}
+        attributionControl={true}
+        zoomControl={true}
+        scrollWheelZoom={true}
+        doubleClickZoom={true}
+        touchZoom={true}
+        whenReady={() => {
+          // Map is ready and initialized
+          console.log('Map initialized successfully')
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
