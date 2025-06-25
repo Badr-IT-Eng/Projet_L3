@@ -182,6 +182,8 @@ public class ItemService {
             item.setImageUrl(dto.getImageUrl());
             item.setContactPhone(dto.getContactPhone());
             item.setContactEmail(dto.getContactEmail());
+            item.setLatitude(dto.getLatitude());
+            item.setLongitude(dto.getLongitude());
         } catch (Exception e) {
             log.error("Error in updateItemFromDto: ", e);
             throw e;
@@ -214,6 +216,8 @@ public class ItemService {
         dto.setUpdatedAt(item.getUpdatedAt());
         dto.setContactPhone(item.getContactPhone());
         dto.setContactEmail(item.getContactEmail());
+        dto.setLatitude(item.getLatitude());
+        dto.setLongitude(item.getLongitude());
         
         return dto;
     }

@@ -68,6 +68,13 @@ public class Item {
     @Column(name = "contact_email")
     private String contactEmail;
 
+    // Geographic coordinates for map display
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

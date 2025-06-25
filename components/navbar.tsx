@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils"
 const getMainNavItems = (isAdmin: boolean) => [
   { title: "Home", href: "/" },
   { title: "Lost Items", href: "/lost-items" },
+  { title: "Map", href: "/map", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
   { title: "Report Lost Item", href: "/report" },
   { title: "Find Items", href: "/search", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
   ...(isAdmin ? [{ title: "Detection", href: "/detection" }] : []),

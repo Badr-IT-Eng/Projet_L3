@@ -103,7 +103,7 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
     try {
       // Create the map instance with better controls
       const map = L.map(mapContainerRef.current, {
-        center: userLocation || [40.7128, -74.006],
+        center: userLocation || [43.2965, 5.3698], // Default to Marseille
         zoom: 15,
         scrollWheelZoom: true,
         zoomControl: false // We'll add custom controls
@@ -308,7 +308,7 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
               " 
               onmouseover="this.style.transform='scale(1.05)'"
               onmouseout="this.style.transform='scale(1)'"
-              onclick="window.location.href='/lost-objects/${obj.id}'">
+              onclick="window.location.href='/lost-items#item-${obj.id}'">
                 View Details
               </button>
             </div>

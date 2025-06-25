@@ -12,9 +12,9 @@ import dynamic from "next/dynamic"
 // Import MapViewer component dynamically to avoid SSR issues
 const MapViewer = dynamic(() => import("@/components/map-viewer"), { ssr: false })
 
-// Default coordinates for items without location data
+// Default coordinates for items without location data (Marseille, France)
 const DEFAULT_COORDINATES = {
-  lat: 40.7128, lng: -74.006 // NYC coordinates as fallback
+  lat: 43.2965, lng: 5.3698 // Marseille coordinates as default
 }
 
 // Function to generate realistic coordinates based on location

@@ -87,7 +87,13 @@ export async function GET(request: NextRequest) {
         })(),
         category: item.category?.toLowerCase() || 'other',
         description: item.description || 'No description available',
-        status: item.status?.toLowerCase() || 'found'
+        status: item.status?.toLowerCase() || 'found',
+        coordinates: {
+          lat: item.latitude || 43.2965,  // Default to Marseille
+          lng: item.longitude || 5.3698,
+          x: Math.floor(Math.random() * 500),  // For compatibility
+          y: Math.floor(Math.random() * 400)
+        }
       })),
       totalItems: data.totalItems,
       totalPages: data.totalPages,
