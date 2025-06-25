@@ -65,4 +65,8 @@ public class ItemDto {
     // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Contact information for the person reporting/finding the item
+    private String contactPhone;
+    private String contactEmail;
 } 

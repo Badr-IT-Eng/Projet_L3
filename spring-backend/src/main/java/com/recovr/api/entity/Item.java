@@ -61,6 +61,13 @@ public class Item {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Contact information for the person reporting/finding the item
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
+    @Column(name = "contact_email")
+    private String contactEmail;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -110,8 +110,8 @@ export async function POST(request: Request) {
     const data = await request.json()
     
     // Simple validation
-    if (!data.name || !data.location || !data.category || !data.image) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!data.name || !data.location || !data.category || !data.image || !data.contactInformation) {
+      return NextResponse.json({ error: "Missing required fields (name, location, category, image, contact info)" }, { status: 400 })
     }
     
     // Category mapping
@@ -132,7 +132,11 @@ export async function POST(request: Request) {
     // Convert relative image URL to full URL for proper display
     const imageUrl = data.image.startsWith('/') ? `http://localhost:3000${data.image}` : data.image;
     
-    // Prepare data with enhanced features
+    // Parse contact information to determine if it's email or phone
+    const contactInfo = data.contactInformation.trim();
+    const isEmail = contactInfo.includes('@');
+    
+    // Prepare data with enhanced features including contact information
     const itemData = {
       name: data.name,
       description: data.description || '',
@@ -144,7 +148,9 @@ export async function POST(request: Request) {
       dateLost: data.date ? `${data.date}T${data.time || '10:00'}:00` : new Date().toISOString(),
       dateFound: null,
       latitude: data.coordinates?.lat || null,
-      longitude: data.coordinates?.lng || null
+      longitude: data.coordinates?.lng || null,
+      contactEmail: isEmail ? contactInfo : null,
+      contactPhone: !isEmail ? contactInfo : null
     }
     
     // Call backend exactly like the working test

@@ -30,7 +30,7 @@ const reportSchema = z.object({
   date: z.date({ required_error: "Date is required" }),
   time: z.string().min(1, "Time is required"),
   image: z.string().min(1, "Please upload an image of the item"),
-  contactInformation: z.string().optional()
+  contactInformation: z.string().min(3, "Contact information is required (phone or email)")
 })
 
 type ReportFormValues = z.infer<typeof reportSchema>
@@ -368,13 +368,16 @@ export default function ReportPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="contactInformation">Contact Information (Optional)</Label>
+                    <Label htmlFor="contactInformation">Contact Information *</Label>
                     <Input
                       id="contactInformation"
                       placeholder="Email or phone number where you can be reached"
                       {...register("contactInformation")}
                       defaultValue={session?.user?.email || ""}
                     />
+                    {errors.contactInformation && (
+                      <p className="text-sm text-destructive">{errors.contactInformation.message}</p>
+                    )}
                   </div>
                 </div>
 

@@ -660,6 +660,10 @@ public class DetectionService {
             item.setLocation("Detected in uploaded video - check with admin for exact location");
             item.setImageUrl(finalImageUrl);
             
+            // Add admin contact information for AI detections
+            item.setContactEmail("admin@recovr.com"); // Default admin email
+            item.setContactPhone("+1-555-RECOVR"); // Default admin phone
+            
             log.info("🎯 Setting Item imageUrl to: {}", finalImageUrl);
             item.setReportedAt(LocalDateTime.now());
             
