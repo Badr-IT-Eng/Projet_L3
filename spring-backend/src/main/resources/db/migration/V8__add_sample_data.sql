@@ -1,27 +1,27 @@
--- Add sample data for demonstration
+-- Données initiales pour test système RECOVR
 
--- Add sample user
+-- Utilisateur de démonstration
 INSERT IGNORE INTO users (username, email, password, first_name, last_name, phone, role, created_at) VALUES 
-('demo_user', 'demo@recovr.com', '$2a$10$kgycQa9RbtLBmto2nsQivuxqUxqIExGTW0nxUCQF29vkNtxb.Dboy', 'Demo', 'User', '+1234567890', 'USER', NOW());
+('user_test', 'contact@systeme-recovr.local', '$2a$10$kgycQa9RbtLBmto2nsQivuxqUxqIExGTW0nxUCQF29vkNtxb.Dboy', 'Utilisateur', 'Test', '+33123456789', 'USER', NOW());
 
--- Link demo user with user role
+-- Association rôle utilisateur
 INSERT IGNORE INTO user_roles (user_id, role_id)
 SELECT u.id, r.id 
 FROM users u, roles r 
-WHERE u.username = 'demo_user' AND r.name = 'ROLE_USER';
+WHERE u.username = 'user_test' AND r.name = 'ROLE_USER';
 
--- Add sample items
+-- Objets test du système
 INSERT IGNORE INTO items (id, name, description, category, status, location, latitude, longitude, image_url, reported_by_id, reported_at, created_at, updated_at) VALUES 
-(1, 'Black Laptop', 'MacBook Pro 13-inch with charger, found in Library', 'ELECTRONICS', 'FOUND', 'Main Library - Study Area B', 40.7831, -73.9712, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(2, 'Blue Backpack', 'Large blue backpack with books and notebooks inside', 'BAGS', 'FOUND', 'Student Center - 2nd Floor', 40.7829, -73.9713, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(3, 'iPhone 14', 'White iPhone 14 with blue case, cracked screen', 'ELECTRONICS', 'FOUND', 'Cafeteria - Near Entrance', 40.7833, -73.9710, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(4, 'Red Wallet', 'Leather wallet with ID cards visible', 'ACCESSORIES', 'FOUND', 'Gym - Locker Room', 40.7825, -73.9715, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(5, 'Golden Watch', 'Expensive-looking gold watch, possibly Rolex', 'JEWELRY', 'FOUND', 'Parking Lot C - Level 2', 40.7820, -73.9720, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(6, 'Keys with Keychain', 'Car keys with Honda logo and house keys', 'KEYS', 'FOUND', 'Main Entrance Hall', 40.7835, -73.9708, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(7, 'Purple Umbrella', 'Compact purple umbrella, automatic open/close', 'ACCESSORIES', 'FOUND', 'Bus Stop Area', 40.7828, -73.9714, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(8, 'Textbook: Calculus', 'Mathematics textbook with notes and highlighting', 'BOOKS', 'FOUND', 'Lecture Hall 101', 40.7832, -73.9711, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(9, 'Wireless Headphones', 'Sony WH-1000XM4 noise-canceling headphones', 'ELECTRONICS', 'FOUND', 'Computer Lab - Room 205', 40.7830, -73.9712, '/placeholder.svg', 1, NOW(), NOW(), NOW()),
-(10, 'Student ID Card', 'University student ID for John Smith', 'DOCUMENTS', 'FOUND', 'Library - Information Desk', 40.7831, -73.9712, '/placeholder.svg', 1, NOW(), NOW(), NOW());
+(1, 'Ordinateur Portable', 'Appareil informatique avec chargeur, trouvé espace étude', 'ELECTRONICS', 'FOUND', 'Bibliothèque Centrale - Zone B', 48.8566, 2.3522, '/uploads/test-laptop.svg', 1, NOW(), NOW(), NOW()),
+(2, 'Sac Bleu', 'Cartable contenant documents et matériel scolaire', 'BAGS', 'FOUND', 'Centre Étudiant - 2ème étage', 48.8567, 2.3523, '/uploads/test-bag.svg', 1, NOW(), NOW(), NOW()),
+(3, 'Téléphone Mobile', 'Smartphone avec coque protectrice', 'ELECTRONICS', 'FOUND', 'Cafétéria - Entrée principale', 48.8568, 2.3521, '/uploads/test-phone.svg', 1, NOW(), NOW(), NOW()),
+(4, 'Portefeuille Rouge', 'Porte-monnaie en cuir avec documents', 'ACCESSORIES', 'FOUND', 'Salle de sport - Vestiaires', 48.8565, 2.3524, '/uploads/test-wallet.svg', 1, NOW(), NOW(), NOW()),
+(5, 'Montre Dorée', 'Accessoire de poignet métallique', 'JEWELRY', 'FOUND', 'Parking C - Niveau 2', 48.8564, 2.3525, '/uploads/test-watch.svg', 1, NOW(), NOW(), NOW()),
+(6, 'Trousseau de Clés', 'Clés véhicule et habitation avec porte-clés', 'KEYS', 'FOUND', 'Hall d\'entrée principal', 48.8569, 2.3520, '/uploads/test-keys.svg', 1, NOW(), NOW(), NOW()),
+(7, 'Parapluie Violet', 'Parapluie compact automatique', 'ACCESSORIES', 'FOUND', 'Arrêt de bus campus', 48.8567, 2.3523, '/uploads/test-umbrella.svg', 1, NOW(), NOW(), NOW()),
+(8, 'Manuel Mathématiques', 'Livre de cours avec annotations personnelles', 'BOOKS', 'FOUND', 'Amphithéâtre 101', 48.8568, 2.3521, '/uploads/test-book.svg', 1, NOW(), NOW(), NOW()),
+(9, 'Casque Audio', 'Équipement audio sans fil avec réduction de bruit', 'ELECTRONICS', 'FOUND', 'Salle informatique - 205', 48.8567, 2.3522, '/uploads/test-headphones.svg', 1, NOW(), NOW(), NOW()),
+(10, 'Carte Étudiant', 'Document d\'identification universitaire', 'DOCUMENTS', 'FOUND', 'Accueil bibliothèque', 48.8566, 2.3522, '/uploads/test-id.svg', 1, NOW(), NOW(), NOW());
 
 -- Add sample detection sessions
 INSERT IGNORE INTO detection_sessions (id, session_id, camera_id, camera_location, model_version, start_time, is_active, confidence_threshold, total_detections, abandoned_objects_count, created_at, updated_at) VALUES 

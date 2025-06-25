@@ -1,23 +1,24 @@
-# RECOVR - AI-Powered Lost & Found Management System
+# RECOVR - Système de Gestion d'Objets Perdus/Trouvés avec IA
 
-A comprehensive web application for tracking, reporting, and discovering lost and found items using advanced AI-powered object detection, interactive mapping, and real-time contact facilitation.
+Plateforme web innovante développée pour faciliter la récupération d'objets perdus grâce à l'intelligence artificielle, la géolocalisation interactive et la mise en relation sécurisée entre utilisateurs.
 
-## 🌟 Project Principles
+## 🎯 Architecture et Fonctionnalités Clés
 
-- **Privacy First**: User contact information is protected and only shared when users choose to connect
-- **Community-Driven**: Connecting people who have lost items with those who have found them
-- **AI-Enhanced**: Using computer vision to improve matching accuracy
-- **Location-Aware**: Interactive maps for precise location reporting and discovery
-- **User-Friendly**: Simple, intuitive interface for all user types
-- **Secure & Compliant**: Complete legal framework with privacy policy and terms of service
+### 💡 Conception Unique
+- **Protection Données**: Informations de contact chiffrées et partagées uniquement sur autorisation
+- **Communauté Solidaire**: Rapprochement intelligent entre personnes ayant perdu/trouvé des objets  
+- **Vision Artificielle**: Algorithmes YOLO personnalisés pour reconnaissance d'objets
+- **Géolocalisation Précise**: Cartographie interactive avec marqueurs contextuels
+- **Interface Adaptative**: Design responsive optimisé pour tous les dispositifs
+- **Conformité RGPD**: Framework juridique complet avec politique de confidentialité
 
-## ✨ Key Features
+## 🔧 Modules Techniques Développés
 
-### 🤖 AI-Powered Detection
-- **Real-time Object Detection**: YOLO-based computer vision for automatic object identification
-- **Smart Categorization**: Automatic item classification (bags, electronics, accessories, etc.)
-- **Image Analysis**: Advanced feature extraction for visual similarity matching
-- **Confidence Scoring**: AI-driven confidence ratings for match accuracy
+### 🤖 Détection Intelligente par IA
+- **Vision Temps Réel**: Implementation YOLO sur mesure pour identification automatique d'objets
+- **Classification Contextuelle**: Taxonomie personnalisée (sacs, électronique, accessoires, documents)
+- **Analyse Visuelle Avancée**: Extraction de caractéristiques avec réseaux de neurones convolutifs
+- **Scoring de Confiance**: Métriques de fiabilité basées sur cosine similarity et distance euclidienne
 
 ### 🗺️ Interactive Mapping
 - **Location Selection**: Click-to-select map interface for precise location reporting

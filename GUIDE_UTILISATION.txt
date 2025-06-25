@@ -1,0 +1,366 @@
+================================================================================
+                    GUIDE D'UTILISATION - RECOVR
+        Système de Gestion d'Objets Perdus et Trouvés avec IA
+================================================================================
+
+TABLE DES MATIÈRES
+==================
+1. INTRODUCTION
+2. DÉMARRAGE RAPIDE
+3. GUIDE UTILISATEUR
+4. GUIDE ADMINISTRATEUR
+5. FONCTIONNALITÉS AVANCÉES
+6. DÉPANNAGE
+7. SUPPORT ET CONTACT
+
+================================================================================
+1. INTRODUCTION
+================================================================================
+
+RECOVR est une plateforme web innovante qui utilise l'intelligence artificielle
+pour aider les utilisateurs à retrouver leurs objets perdus et à signaler les
+objets trouvés. Le système combine la vision par ordinateur, la cartographie
+interactive et un système de contact sécurisé.
+
+PRINCIPES CLÉS :
+- Protection de la vie privée
+- Communauté solidaire
+- Intelligence artificielle
+- Géolocalisation précise
+- Interface intuitive
+- Sécurité et conformité
+
+================================================================================
+2. DÉMARRAGE RAPIDE
+================================================================================
+
+ACCÈS À L'APPLICATION
+---------------------
+URL : http://localhost:3000
+Email de test : admin@recovr.com
+Mot de passe de test : admin123
+
+PREMIÈRE UTILISATION
+--------------------
+1. Accédez à l'application via votre navigateur
+2. Cliquez sur "S'inscrire" pour créer un compte
+3. Remplissez le formulaire d'inscription avec vos informations
+4. Confirmez votre inscription via email (si configuré)
+5. Connectez-vous avec vos identifiants
+
+================================================================================
+3. GUIDE UTILISATEUR
+================================================================================
+
+3.1 CRÉATION DE COMPTE
+----------------------
+1. Cliquez sur "S'inscrire"
+2. Saisissez :
+   - Nom d'utilisateur
+   - Email
+   - Mot de passe (minimum 8 caractères)
+   - Confirmation du mot de passe
+3. Acceptez les conditions d'utilisation
+4. Cliquez sur "Créer un compte"
+
+3.2 SIGNALER UN OBJET PERDU
+----------------------------
+1. Connectez-vous à votre compte
+2. Cliquez sur "Signaler un objet perdu"
+3. Remplissez le formulaire :
+   
+   INFORMATIONS OBLIGATOIRES :
+   - Nom de l'objet (ex: "Sac à dos noir")
+   - Catégorie (Sac, Électronique, Accessoire, Vêtement, Document, Autre)
+   - Description détaillée (couleur, marque, caractéristiques)
+   - Date de perte
+   - Heure approximative
+   - Lieu de perte
+   - Photo de l'objet
+   - Informations de contact
+
+   SÉLECTION DU LIEU :
+   - Tapez l'adresse dans le champ "Lieu"
+   - OU cliquez sur l'icône de carte
+   - Cliquez sur la carte pour sélectionner l'emplacement précis
+   - L'adresse sera automatiquement remplie
+
+   UPLOAD DE PHOTO :
+   - Glissez-déposez votre image
+   - OU cliquez pour parcourir vos fichiers
+   - Formats acceptés : PNG, JPG, JPEG
+   - Taille maximum : 5MB
+
+4. Cliquez sur "Signaler l'objet"
+5. Vous serez redirigé vers la liste des objets perdus
+
+3.3 RECHERCHER DES OBJETS
+--------------------------
+1. Accédez à "Objets perdus" dans le menu
+2. Utilisez les options de recherche :
+
+   RECHERCHE TEXTUELLE :
+   - Tapez des mots-clés dans la barre de recherche
+   - Recherche dans le nom, description, lieu
+
+   FILTRES AVANCÉS :
+   - Catégorie d'objet
+   - Date de perte
+   - Localisation
+
+   RECHERCHE VISUELLE (bientôt disponible) :
+   - Uploadez une photo d'un objet trouvé
+   - L'IA recherchera des objets visuellement similaires
+
+3.4 CONTACTER LE PROPRIÉTAIRE
+------------------------------
+1. Trouvez l'objet dans la liste
+2. Cliquez sur "J'ai trouvé cet objet"
+3. Vous accédez à la page de contact sécurisée
+4. Choisissez votre méthode de contact :
+
+   EMAIL :
+   - Cliquez sur "Contacter par email"
+   - Votre client email s'ouvrira automatiquement
+   - Le sujet sera pré-rempli
+
+   TÉLÉPHONE :
+   - Cliquez sur "Appeler"
+   - Le numéro sera affiché pour composer
+
+5. Suivez les conseils de sécurité affichés
+6. Organisez un rendez-vous dans un lieu public et sûr
+
+3.5 GESTION DU PROFIL
+----------------------
+1. Cliquez sur votre nom d'utilisateur (coin supérieur droit)
+2. Sélectionnez "Profil"
+3. Modifiez vos informations :
+   - Nom d'utilisateur
+   - Email
+   - Informations de contact
+   - Préférences de notification
+4. Sauvegardez les modifications
+
+================================================================================
+4. GUIDE ADMINISTRATEUR
+================================================================================
+
+4.1 ACCÈS ADMINISTRATEUR
+-------------------------
+URL : http://localhost:3000/admin/login
+Email : admin@recovr.com
+Mot de passe : admin123
+
+4.2 TABLEAU DE BORD ADMIN
+--------------------------
+Le tableau de bord affiche :
+- Nombre total d'objets signalés
+- Objets récupérés avec succès
+- Utilisateurs actifs
+- Statistiques de détection IA
+
+4.3 GESTION DES OBJETS
+----------------------
+1. Accédez à "Gestion des objets"
+2. Actions disponibles :
+   - Voir tous les objets signalés
+   - Modifier les informations d'un objet
+   - Marquer un objet comme récupéré
+   - Supprimer un objet (si nécessaire)
+   - Exporter les données
+
+4.4 GESTION DES UTILISATEURS
+-----------------------------
+1. Accédez à "Gestion des utilisateurs"
+2. Actions disponibles :
+   - Voir la liste de tous les utilisateurs
+   - Modifier les rôles utilisateur
+   - Suspendre/Activer des comptes
+   - Voir l'activité des utilisateurs
+
+4.5 SYSTÈME DE DÉTECTION IA
+----------------------------
+1. Accédez à "Détection IA"
+2. Fonctionnalités :
+   - Voir les détections automatiques
+   - Configurer les paramètres de détection
+   - Télécharger les modèles IA
+   - Voir les logs de détection
+
+================================================================================
+5. FONCTIONNALITÉS AVANCÉES
+================================================================================
+
+5.1 DÉTECTION AUTOMATIQUE D'OBJETS
+-----------------------------------
+Le système utilise YOLO v8 pour détecter automatiquement :
+- Sacs et bagages
+- Appareils électroniques
+- Accessoires
+- Vêtements
+- Documents
+
+COMMENT ÇA MARCHE :
+1. Uploadez une photo
+2. L'IA analyse l'image
+3. Les objets sont automatiquement détectés
+4. Une catégorie est suggérée
+5. Un score de confiance est affiché
+
+5.2 CARTOGRAPHIE INTERACTIVE
+-----------------------------
+FONCTIONNALITÉS :
+- Cartes Leaflet avec tuiles OpenStreetMap
+- Marqueurs personnalisés pour différents types d'objets
+- Sélection par clic pour localisation précise
+- Géocodage automatique (coordonnées vers adresse)
+
+UTILISATION :
+1. Cliquez sur l'icône de carte lors du signalement
+2. Naviguez sur la carte
+3. Cliquez pour sélectionner l'emplacement
+4. L'adresse est automatiquement générée
+
+5.3 SYSTÈME DE MATCHING VISUEL
+-------------------------------
+(Fonctionnalité en développement)
+- Comparaison d'images par IA
+- Extraction de caractéristiques visuelles
+- Score de similarité
+- Suggestions automatiques d'objets correspondants
+
+================================================================================
+6. DÉPANNAGE
+================================================================================
+
+6.1 PROBLÈMES DE CONNEXION
+---------------------------
+SYMPTÔME : Impossible de se connecter
+SOLUTIONS :
+1. Vérifiez vos identifiants
+2. Réinitialisez votre mot de passe
+3. Videz le cache du navigateur
+4. Vérifiez votre connexion internet
+
+6.2 PROBLÈMES D'UPLOAD D'IMAGES
+--------------------------------
+SYMPTÔME : L'image ne se télécharge pas
+SOLUTIONS :
+1. Vérifiez la taille (maximum 5MB)
+2. Vérifiez le format (PNG, JPG, JPEG)
+3. Essayez avec une autre image
+4. Rafraîchissez la page
+
+6.3 CARTE NE S'AFFICHE PAS
+---------------------------
+SYMPTÔME : La carte interactive ne fonctionne pas
+SOLUTIONS :
+1. Vérifiez votre connexion internet
+2. Autorisez la géolocalisation dans votre navigateur
+3. Actualisez la page
+4. Essayez avec un autre navigateur
+
+6.4 PROBLÈMES DE PERFORMANCE
+-----------------------------
+SYMPTÔME : Application lente
+SOLUTIONS :
+1. Fermez les autres onglets du navigateur
+2. Videz le cache du navigateur
+3. Redémarrez votre navigateur
+4. Vérifiez votre connexion internet
+
+6.5 DÉTECTION IA NE FONCTIONNE PAS
+-----------------------------------
+SYMPTÔME : Pas de détection automatique
+SOLUTIONS :
+1. Utilisez des images de bonne qualité
+2. Assurez-vous que l'objet est bien visible
+3. Essayez avec un éclairage différent
+4. Contactez le support technique
+
+================================================================================
+7. SUPPORT ET CONTACT
+================================================================================
+
+7.1 INFORMATIONS DE CONTACT
+----------------------------
+Email : youssef.azizi@etu.univ-amu.fr
+Téléphone : +33749491042
+Adresse : 22 traverse brun, 13016 Marseille, France
+
+7.2 HEURES DE SUPPORT
+----------------------
+Lundi - Vendredi : 9h00 - 18h00
+Week-end : Support par email uniquement
+
+7.3 AVANT DE CONTACTER LE SUPPORT
+----------------------------------
+1. Consultez cette documentation
+2. Vérifiez la section FAQ dans l'application
+3. Essayez les solutions de dépannage
+4. Préparez les informations suivantes :
+   - Votre nom d'utilisateur
+   - Description du problème
+   - Actions effectuées avant le problème
+   - Navigateur et système d'exploitation utilisés
+
+7.4 SIGNALER UN BUG
+--------------------
+1. Accédez à la section "Contact" dans l'application
+2. Sélectionnez "Signaler un problème technique"
+3. Décrivez le problème en détail
+4. Joignez des captures d'écran si possible
+5. Incluez les étapes pour reproduire le problème
+
+7.5 DEMANDES D'AMÉLIORATION
+----------------------------
+Nous accueillons vos suggestions d'amélioration :
+1. Utilisez le formulaire de feedback dans l'application
+2. Envoyez un email avec "SUGGESTION" en objet
+3. Décrivez votre idée et son utilité
+4. Nous examinerons toutes les suggestions
+
+================================================================================
+ANNEXES
+================================================================================
+
+NAVIGATION RAPIDE
+-----------------
+- Accueil : Aperçu de la plateforme
+- Signaler : Déclarer un objet perdu
+- Objets perdus : Rechercher des objets
+- FAQ : Questions fréquentes
+- Contact : Support et aide
+- Profil : Gestion du compte
+
+RACCOURCIS CLAVIER
+------------------
+- Ctrl+/ : Ouvrir la recherche rapide
+- Esc : Fermer les dialogues
+- Tab : Navigation au clavier
+- Entrée : Valider les formulaires
+
+FORMATS DE FICHIERS SUPPORTÉS
+-----------------------------
+Images : PNG, JPG, JPEG
+Taille maximum : 5MB
+Résolution recommandée : 1024x768 minimum
+
+NAVIGATEURS SUPPORTÉS
+---------------------
+- Chrome 90+
+- Firefox 85+
+- Safari 14+
+- Edge 90+
+
+================================================================================
+FIN DU GUIDE D'UTILISATION
+================================================================================
+
+Pour la version la plus récente de ce guide, consultez l'application web
+ou contactez notre équipe de support.
+
+Dernière mise à jour : Décembre 2024
+Version du guide : 1.0
+================================================================================
