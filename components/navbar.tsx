@@ -1,28 +1,29 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
+import { usePathname } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { GradientButton } from "@/components/ui/gradient-button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Search, MapPin } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { cn } from "@/lib/utils"
-import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
 import { Logo } from "@/components/ui/logo"
+import { cn } from "@/lib/utils"
 
-const mainNavItems = [
+// Dynamically generate nav items based on admin status
+const getMainNavItems = (isAdmin: boolean) => [
   { title: "Home", href: "/" },
   { title: "Lost Items", href: "/lost-items" },
   { title: "Report Lost Item", href: "/report" },
   { title: "Find Items", href: "/search", className: "dark:text-white dark:font-bold dark:hover:text-primary-300" },
-  { title: "Detection", href: "/detection" },
-  { title: "Map", href: "/map" },
+  ...(isAdmin ? [{ title: "Detection", href: "/detection" }] : []),
 ]
 
-export function MainNav() {
+// Desktop navigation
+export function MainNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname()
+  const mainNavItems = getMainNavItems(isAdmin)
 
   return (
     <div className="mr-4 hidden md:flex">
@@ -33,17 +34,19 @@ export function MainNav() {
             href={item.href}
             className={cn(
               "transition-colors hover:text-primary py-2 relative group dark:hover:text-primary link-hover",
-              pathname === item.href 
-                ? "text-primary font-medium active-nav-item" 
+              pathname === item.href
+                ? "text-primary font-medium active-nav-item"
                 : "text-muted-foreground dark:text-gray-300",
               item.className
             )}
           >
             {item.title}
-            <span className={cn(
-              "absolute bottom-0 left-0 w-full h-0.5 bg-primary transform origin-left transition-transform duration-300", 
-              pathname === item.href ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-            )}></span>
+            <span
+              className={cn(
+                "absolute bottom-0 left-0 w-full h-0.5 bg-primary transform origin-left transition-transform duration-300",
+                pathname === item.href ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )}
+            ></span>
           </Link>
         ))}
       </nav>
@@ -51,8 +54,10 @@ export function MainNav() {
   )
 }
 
-export function MobileNav() {
+// Mobile navigation (drawer)
+export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname()
+  const mainNavItems = getMainNavItems(isAdmin)
 
   return (
     <Sheet>
@@ -84,7 +89,11 @@ export function MobileNav() {
           ))}
         </div>
         <div className="mt-auto pt-4 border-t space-y-4 px-2">
-          <Button className="w-full hover:text-white dark:text-gray-300 dark:hover:text-white" variant="outline" asChild>
+          <Button
+            className="w-full hover:text-white dark:text-gray-300 dark:hover:text-white"
+            variant="outline"
+            asChild
+          >
             <Link href="/auth/signin">Log in</Link>
           </Button>
           <GradientButton variant="dark" className="w-full" asChild>
@@ -96,32 +105,50 @@ export function MobileNav() {
   )
 }
 
+// Main Navbar component
 export function Navbar({ className }: { className?: string }) {
   const { data: session, status } = useSession()
   const isAuthenticated = status === "authenticated"
   const isAdmin = session?.user?.role === "ROLE_ADMIN"
-  const user = session?.user
 
   return (
-    <header className={cn("sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60", className)}>
+    <header
+      className={cn(
+        "sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+        className
+      )}
+    >
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           <div className="flex items-center">
-            <MobileNav />
+            {/* Pass isAdmin to control visibility of Detection link */}
+            <MobileNav isAdmin={isAdmin} />
             <Link href="/" className="flex items-center gap-2 mr-10 relative group">
-              <div className="absolute -inset-2 rounded-xl bg-background opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute -inset-2 rounded-xl bg-background opacity-0 group-hover:opacity-100 transition-opacity" />
               <Logo width={140} height={40} className="h-10 w-auto relative" />
             </Link>
-            <MainNav />
+            <MainNav isAdmin={isAdmin} />
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800" aria-label="Search items" asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800"
+              aria-label="Search items"
+              asChild
+            >
               <Link href="/search">
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800" aria-label="View map" asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hidden sm:flex hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800"
+              aria-label="View map"
+              asChild
+            >
               <Link href="/map">
                 <MapPin className="h-5 w-5" />
                 <span className="sr-only">Map</span>
@@ -159,4 +186,4 @@ export function Navbar({ className }: { className?: string }) {
       </div>
     </header>
   )
-} 
+}

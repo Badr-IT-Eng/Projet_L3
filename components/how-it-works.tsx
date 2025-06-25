@@ -14,19 +14,20 @@ const steps = [
     icon: <Search className="h-6 w-6" />,
     title: "AI-Powered Matching",
     description: "Our system uses advanced image recognition to match your lost item with found objects.",
-    image: "/Home_Images/matching.png",
+    image: "/Home_Images/WhatsApp Image 2025-06-24 at 22.10.59 (1).jpeg",
   },
   {
     icon: <Bell className="h-6 w-6" />,
     title: "Get Notified",
     description: "Receive notifications when potential matches are found for your lost item.",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
+    image: "/Home_Images/WhatsApp Image 2025-06-25 at 07.47.26.jpeg",
+
   },
   {
     icon: <ThumbsUp className="h-6 w-6" />,
     title: "Recover Your Item",
     description: "Connect with the finder and retrieve your lost item safely.",
-    image: "/placeholder.svg",
+    image: "/Home_Images/WhatsApp Image 2025-06-24 at 22.11.00.jpeg",
   },
 ]
 
