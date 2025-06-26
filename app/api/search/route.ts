@@ -24,9 +24,14 @@ function calculateTextRelevance(item: any, searchData: any): number {
     
     let nameScore = 0;
     
-    // Exact name match
+    // Perfect exact match gets maximum score
+    if (item.name.toLowerCase().trim() === searchData.description.toLowerCase().trim()) {
+      return 100; // Return immediately with perfect score
+    }
+    
+    // Normalized exact match
     if (itemName === query) {
-      nameScore = 40;
+      nameScore = 95;
     }
     // Fuzzy name matching
     else {
@@ -42,7 +47,7 @@ function calculateTextRelevance(item: any, searchData: any): number {
       }
     }
     
-    score += Math.min(nameScore, 40);
+    score += Math.min(nameScore, 95);
   }
   
   // Enhanced description matching with fuzzy search
@@ -89,14 +94,36 @@ function calculateTextRelevance(item: any, searchData: any): number {
   // Enhanced location matching with fuzzy search
   if (searchData.location && item.location) {
     const locationQuery = normalizeText(searchData.location);
+    const itemLocationNorm = normalizeText(item.location);
     
-    if (itemLocation.includes(locationQuery)) {
-      score += 10; // Exact substring match
-    } else {
-      const locationSimilarity = similarityScore(locationQuery, itemLocation);
-      if (locationSimilarity > 0.7) {
-        score += locationSimilarity * 8;
+    // Check for exact match first
+    if (itemLocationNorm.includes(locationQuery)) {
+      score += 15; // Exact substring match
+    } 
+    // Check for partial word matches
+    else {
+      const locationWords = locationQuery.split(' ').filter(word => word.length > 2);
+      const itemLocationWords = itemLocationNorm.split(' ');
+      
+      let locationScore = 0;
+      for (const queryWord of locationWords) {
+        for (const itemWord of itemLocationWords) {
+          // Exact word match
+          if (itemWord === queryWord) {
+            locationScore += 5;
+          }
+          // Fuzzy word match
+          else if (similarityScore(queryWord, itemWord) > 0.6) {
+            locationScore += 2;
+          }
+          // Substring match
+          else if (itemWord.includes(queryWord) || queryWord.includes(itemWord)) {
+            locationScore += 3;
+          }
+        }
       }
+      
+      score += Math.min(locationScore, 12);
     }
   }
   
@@ -156,11 +183,55 @@ function calculateTextRelevance(item: any, searchData: any): number {
 function isInDateRange(itemDate: string, dateFrom?: string, dateTo?: string): boolean {
   if (!dateFrom && !dateTo) return true;
   
-  const item = new Date(itemDate);
-  const from = dateFrom ? new Date(dateFrom) : new Date(0);
-  const to = dateTo ? new Date(dateTo) : new Date();
-  
-  return item >= from && item <= to;
+  try {
+    // Handle different date formats from backend
+    let itemDateObj: Date;
+    
+    if (itemDate.includes('T')) {
+      // ISO format: "2025-06-26T11:01:07"
+      itemDateObj = new Date(itemDate);
+    } else if (itemDate.includes('-')) {
+      // Date only format: "2025-06-26"
+      itemDateObj = new Date(itemDate);
+    } else {
+      // Try parsing as is
+      itemDateObj = new Date(itemDate);
+    }
+    
+    // Check if date is valid
+    if (isNaN(itemDateObj.getTime())) {
+      console.warn('Invalid item date:', itemDate);
+      return true; // Don't filter out items with invalid dates
+    }
+    
+    // Set time to start of day for date-only comparisons
+    const itemDateOnly = new Date(itemDateObj.getFullYear(), itemDateObj.getMonth(), itemDateObj.getDate());
+    
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      if (isNaN(fromDate.getTime())) {
+        console.warn('Invalid dateFrom:', dateFrom);
+        return true;
+      }
+      const fromDateOnly = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+      if (itemDateOnly < fromDateOnly) return false;
+    }
+    
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      if (isNaN(toDate.getTime())) {
+        console.warn('Invalid dateTo:', dateTo);
+        return true;
+      }
+      const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+      if (itemDateOnly > toDateOnly) return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn('Error parsing date:', error, 'itemDate:', itemDate);
+    return true; // Don't filter out items with parsing errors
+  }
 }
 
 // Input validation schema
@@ -220,26 +291,64 @@ function validateSearchRequest(data: any): { valid: boolean; errors: string[]; s
     }
   }
   
-  // Date validation
+  // Date validation with multiple format support
   if (data.dateFrom) {
-    const fromDate = new Date(data.dateFrom);
-    if (isNaN(fromDate.getTime())) {
-      errors.push('Invalid dateFrom format');
-    } else if (fromDate > new Date()) {
-      errors.push('dateFrom cannot be in the future');
+    let fromDate: Date;
+    const dateFromStr = String(data.dateFrom).trim();
+    
+    // Try parsing different date formats
+    if (dateFromStr.includes('/')) {
+      // Handle DD/MM/YYYY or MM/DD/YYYY format
+      const parts = dateFromStr.split('/');
+      if (parts.length === 3) {
+        const [part1, part2, part3] = parts;
+        // Assume DD/MM/YYYY format for European users
+        if (part3.length === 4) {
+          fromDate = new Date(`${part3}-${part2.padStart(2, '0')}-${part1.padStart(2, '0')}`);
+        } else {
+          fromDate = new Date(dateFromStr);
+        }
+      } else {
+        fromDate = new Date(dateFromStr);
+      }
     } else {
-      sanitized.dateFrom = data.dateFrom;
+      fromDate = new Date(dateFromStr);
+    }
+    
+    if (isNaN(fromDate.getTime())) {
+      errors.push('Invalid dateFrom format. Use YYYY-MM-DD or DD/MM/YYYY');
+    } else {
+      sanitized.dateFrom = fromDate.toISOString().split('T')[0];
     }
   }
   
   if (data.dateTo) {
-    const toDate = new Date(data.dateTo);
-    if (isNaN(toDate.getTime())) {
-      errors.push('Invalid dateTo format');
-    } else if (toDate > new Date()) {
-      errors.push('dateTo cannot be in the future');
+    let toDate: Date;
+    const dateToStr = String(data.dateTo).trim();
+    
+    // Try parsing different date formats
+    if (dateToStr.includes('/')) {
+      // Handle DD/MM/YYYY or MM/DD/YYYY format
+      const parts = dateToStr.split('/');
+      if (parts.length === 3) {
+        const [part1, part2, part3] = parts;
+        // Assume DD/MM/YYYY format for European users
+        if (part3.length === 4) {
+          toDate = new Date(`${part3}-${part2.padStart(2, '0')}-${part1.padStart(2, '0')}`);
+        } else {
+          toDate = new Date(dateToStr);
+        }
+      } else {
+        toDate = new Date(dateToStr);
+      }
     } else {
-      sanitized.dateTo = data.dateTo;
+      toDate = new Date(dateToStr);
+    }
+    
+    if (isNaN(toDate.getTime())) {
+      errors.push('Invalid dateTo format. Use YYYY-MM-DD or DD/MM/YYYY');
+    } else {
+      sanitized.dateTo = toDate.toISOString().split('T')[0];
     }
   }
   
@@ -381,17 +490,34 @@ export async function POST(request: Request) {
       
       // Prepare data for backend search endpoint
       
-      // Use the new backend search endpoint
-      const apiUrl = `${BACKEND_URL}/api/items/search`;
-      console.log('🔍 Searching with data:', sanitizedData);
+      // Use the backend lost items endpoint with search parameters
+      // TODO: Create a general /api/items/public endpoint in backend for both lost and found items
+      let apiUrl = `${BACKEND_URL}/api/items/public/lost?size=100`;
       
-      // Fetch from backend using POST
+      // Add search parameters to URL for better backend filtering
+      const params = new URLSearchParams();
+      if (sanitizedData.description) {
+        params.append('search', sanitizedData.description);
+      }
+      if (sanitizedData.location) {
+        params.append('location', sanitizedData.location);
+      }
+      if (sanitizedData.category && sanitizedData.category !== 'all') {
+        params.append('category', sanitizedData.category);
+      }
+      
+      if (params.toString()) {
+        apiUrl += '&' + params.toString();
+      }
+      
+      console.log('🔍 Searching with URL:', apiUrl);
+      
+      // Fetch from backend using GET with parameters
       const response = await fetch(apiUrl, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sanitizedData),
         cache: 'no-store'
       });
       
@@ -408,13 +534,7 @@ export async function POST(request: Request) {
       
       const backendData = await response.json();
       
-      // Check if backend already processed results
-      if (backendData.results) {
-        // Backend already provided processed results
-        return NextResponse.json(backendData);
-      }
-      
-      // Fallback to old processing if needed
+      // Get items from backend response
       const items = backendData.items || [];
       
       // Enhanced filtering and scoring
@@ -428,7 +548,21 @@ export async function POST(request: Request) {
             id: item.id,
             name: item.name || 'Unnamed Item',
             location: item.location || 'Unknown Location', 
-            date: item.dateLost || item.createdAt || new Date().toISOString().split('T')[0],
+            date: (() => {
+              // Use the most appropriate date field and ensure proper format
+              const dateSource = item.dateLost || item.dateFound || item.createdAt || item.updatedAt;
+              if (!dateSource) return new Date().toISOString().split('T')[0];
+              
+              try {
+                const dateObj = new Date(dateSource);
+                if (isNaN(dateObj.getTime())) {
+                  return new Date().toISOString().split('T')[0];
+                }
+                return dateObj.toISOString().split('T')[0];
+              } catch {
+                return new Date().toISOString().split('T')[0];
+              }
+            })(),
             time: item.dateLost ? new Date(item.dateLost).toLocaleTimeString() : new Date().toLocaleTimeString(),
             image: (() => {
               if (!item.imageUrl || item.imageUrl === 'test.jpg') {
@@ -445,6 +579,7 @@ export async function POST(request: Request) {
             category: item.category?.toLowerCase() || 'other',
             description: item.description || 'No description available',
             status: item.status?.toLowerCase() || 'lost',
+            itemType: item.status?.toLowerCase() === 'found' ? 'FOUND' : 'LOST',
             coordinates: {
               x: item.longitude || 0,
               y: item.latitude || 0

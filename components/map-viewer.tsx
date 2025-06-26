@@ -33,11 +33,11 @@ const MapWithNoSSRComponent = dynamic(
 )
 
 // This component will only be rendered on the client side
-const MapViewer = ({ objects }: { objects: MapObject[] }) => {
+const MapViewer = ({ objects, highlightItemId }: { objects: MapObject[], highlightItemId?: number | null }) => {
   // No need for state to manage keys, as we've fixed the underlying issue
   return (
     <div className="w-full h-full">
-      <MapWithNoSSRComponent objects={objects} />
+      <MapWithNoSSRComponent objects={objects} highlightItemId={highlightItemId} />
     </div>
   )
 }

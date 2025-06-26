@@ -4,7 +4,9 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Clock, User, AlertTriangle } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { MapPin, Clock, User, AlertTriangle, Search, X, Filter } from "lucide-react"
 import { format } from "date-fns"
 import Image from "next/image"
 import Link from "next/link"
@@ -33,6 +35,14 @@ export default function LostItemsPage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const itemsPerPage = 12
+  
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState("")
+  const [locationQuery, setLocationQuery] = useState("")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  const [searchActive, setSearchActive] = useState(false)
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -48,8 +58,12 @@ export default function LostItemsPage() {
 
 
   useEffect(() => {
-    fetchLostItems()
-  }, [selectedCategory, currentPage])
+    if (searchActive) {
+      handleSearch()
+    } else {
+      fetchLostItems()
+    }
+  }, [selectedCategory, currentPage, searchActive])
 
   const fetchLostItems = async () => {
     try {
@@ -111,7 +125,7 @@ export default function LostItemsPage() {
           // For other cases (like just filenames), treat as API endpoint
           return `http://localhost:8082/api/files/${imgUrl}`;
         })(),
-        reportedBy: item.reportedByUsername || 'Anonymous',
+        reportedBy: item.reportedByUsername || (item.contactEmail ? item.contactEmail.split('@')[0] : 'Anonymous Reporter'),
         contactInfo: item.contactEmail || item.contactPhone || 'No contact info',
         contactEmail: item.contactEmail,
         contactPhone: item.contactPhone,
@@ -134,6 +148,91 @@ export default function LostItemsPage() {
     }
   };
 
+  const handleSearch = async () => {
+    try {
+      setLoading(true)
+      
+      // Prepare search data
+      const searchData: any = {
+        searchType: "details"
+      }
+      
+      if (searchQuery.trim()) {
+        searchData.description = searchQuery.trim()
+      }
+      
+      if (locationQuery.trim()) {
+        searchData.location = locationQuery.trim()
+      }
+      
+      if (selectedCategory !== "all") {
+        searchData.category = selectedCategory
+      }
+      
+      if (dateFrom) {
+        searchData.dateFrom = dateFrom
+      }
+      
+      if (dateTo) {
+        searchData.dateTo = dateTo
+      }
+      
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(searchData)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+      
+      const data = await response.json()
+      
+      // Transform search results to match LostItem interface
+      const transformedItems = (data.results || []).map((item: any) => ({
+        id: item.id,
+        name: item.name || 'Unnamed Item',
+        description: item.description || 'No description available',
+        category: item.category ? item.category.toUpperCase() : 'OTHER',
+        location: item.location || 'Unknown Location',
+        dateLost: item.date || new Date().toISOString().split('T')[0],
+        imageUrl: item.image || '/placeholder.svg',
+        reportedBy: item.reportedBy || 'Anonymous',
+        contactInfo: item.contactEmail || 'No contact info',
+        status: item.status || 'lost',
+        contactEmail: item.contactEmail,
+        contactPhone: item.contactPhone,
+        reward: undefined
+      }))
+      
+      setLostItems(transformedItems)
+      setTotalPages(1) // Search doesn't use pagination yet
+      
+    } catch (error) {
+      console.error('Search error:', error)
+      setLostItems([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const clearSearch = () => {
+    setSearchQuery("")
+    setLocationQuery("")
+    setDateFrom("")
+    setDateTo("")
+    setSearchActive(false)
+    setShowFilters(false)
+  }
+
+  const executeSearch = () => {
+    setSearchActive(true)
+    setCurrentPage(0)
+    handleSearch()
+  }
 
   const getDaysLost = (dateLost: string) => {
     const lostDate = new Date(dateLost)
@@ -161,9 +260,112 @@ export default function LostItemsPage() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-foreground mb-2">Lost Items</h1>
         <p className="text-lg text-muted-foreground">
-          Browse items that people have lost and are looking for. Use the "Find Items" page to search for specific items.
+          Browse items that people have lost and are looking for. Use the search below to find specific items.
         </p>
       </div>
+
+      {/* Search Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search Lost Items
+          </CardTitle>
+          <CardDescription>
+            Search by name, location, or date range to find specific lost items
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="searchQuery">Item Name or Description</Label>
+                <Input
+                  id="searchQuery"
+                  placeholder="Search for iPhone, wallet, keys..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && executeSearch()}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="locationQuery">Location</Label>
+                <Input
+                  id="locationQuery"
+                  placeholder="Location where item was lost"
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && executeSearch()}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                <div>
+                  <Label htmlFor="dateFrom">From Date</Label>
+                  <Input
+                    id="dateFrom"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supports: DD/MM/YYYY or YYYY-MM-DD format
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="dateTo">To Date</Label>
+                  <Input
+                    id="dateTo"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supports: DD/MM/YYYY or YYYY-MM-DD format
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex gap-3 flex-wrap">
+              <Button onClick={executeSearch} disabled={loading} className="flex-1 md:flex-none">
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Search Items
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {showFilters ? 'Hide' : 'Show'} Filters
+              </Button>
+              
+              {searchActive && (
+                <Button variant="outline" onClick={clearSearch}>
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Search
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick Filter Section */}
       <div className="mb-6 flex flex-wrap gap-2">
@@ -193,10 +395,23 @@ export default function LostItemsPage() {
         </div>
       ) : (
         <>
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              Found {lostItems.length} lost items
+              {searchActive ? 'Search Results:' : 'Showing'} {lostItems.length} lost items
+              {searchActive && (searchQuery || locationQuery || dateFrom || dateTo) && (
+                <span className="ml-2 text-primary">
+                  {searchQuery && `• "${searchQuery}"`}
+                  {locationQuery && ` • in ${locationQuery}`}
+                  {(dateFrom || dateTo) && ` • ${dateFrom || '...'} to ${dateTo || '...'}`}
+                </span>
+              )}
             </p>
+            {searchActive && (
+              <Button variant="ghost" size="sm" onClick={clearSearch} className="text-muted-foreground">
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
 
           {lostItems.length === 0 ? (
@@ -249,7 +464,7 @@ export default function LostItemsPage() {
                 const validImageUrl = getValidImageUrl(item.imageUrl);
 
                 return (
-                  <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
                     <div className="aspect-[4/3] relative">
                       <Image
                         src={validImageUrl}
@@ -282,7 +497,7 @@ export default function LostItemsPage() {
                     </CardDescription>
                   </CardHeader>
                   
-                  <CardContent className="pt-0 px-6">
+                  <CardContent className="pt-0 px-6 flex-1">
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
@@ -306,12 +521,27 @@ export default function LostItemsPage() {
                     </div>
                   </CardContent>
                   
-                  <CardFooter className="pt-2 px-6 pb-6">
-                    <Link href={`/contact/${item.id}`} className="w-full">
-                      <Button className="w-full h-11" variant="outline">
-                        I Found This Item
-                      </Button>
-                    </Link>
+                  <CardFooter className="pt-2 px-6 pb-6 flex flex-col gap-2 mt-auto">
+                    <div className="flex gap-2 w-full">
+                      <Link href={`/contact/${item.id}`} className="flex-1">
+                        <Button className="w-full h-11" variant="outline">
+                          I Found This Item
+                        </Button>
+                      </Link>
+                      <Link href={`/map?highlight=${item.id}`} className="flex-1">
+                        <Button className="w-full h-11 bg-blue-600 text-white hover:bg-blue-700 border-blue-600">
+                          📍 View on Map
+                        </Button>
+                      </Link>
+                    </div>
+                    {item.reportedBy && item.reportedBy !== 'Anonymous Reporter' && (
+                      <Link href={`/profile/${item.reportedBy}`} className="w-full">
+                        <Button className="w-full h-10" variant="ghost" size="sm">
+                          <User className="h-4 w-4 mr-2" />
+                          View Reporter Profile
+                        </Button>
+                      </Link>
+                    )}
                   </CardFooter>
                 </Card>
               );

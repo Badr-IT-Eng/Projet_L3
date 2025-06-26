@@ -58,7 +58,10 @@ export default function SearchPage() {
 
   const handleTextSearch = async () => {
     const hasAnyFilter = searchQuery.trim() || location || dateFrom || dateTo;
-    if (!hasAnyFilter) return;
+    if (!hasAnyFilter) {
+      setError("Please enter at least one search criteria (name, location, or date)");
+      return;
+    }
 
     setLoading(true)
     setError(null)
@@ -234,7 +237,11 @@ export default function SearchPage() {
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
                       className="mt-2"
+                      placeholder="YYYY-MM-DD"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Supports: DD/MM/YYYY or YYYY-MM-DD format
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="dateTo">To Date</Label>
@@ -244,7 +251,11 @@ export default function SearchPage() {
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
                       className="mt-2"
+                      placeholder="YYYY-MM-DD"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Supports: DD/MM/YYYY or YYYY-MM-DD format
+                    </p>
                   </div>
                 </div>
 

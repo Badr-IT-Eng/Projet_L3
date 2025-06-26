@@ -33,9 +33,36 @@ export function MapPicker({ onLocationSelect, initialLocation }: MapPickerProps)
     lng: 5.3698
   }
 
-  const handleLocationSelect = (lat: number, lng: number) => {
-    // Simple reverse geocoding using a basic address format
-    const address = `Latitude: ${lat.toFixed(4)}, Longitude: ${lng.toFixed(4)}`
+  const handleLocationSelect = async (lat: number, lng: number) => {
+    // Perform reverse geocoding to get actual address
+    let address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'RecovR-Lost-Found-App'
+          }
+        }
+      )
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.display_name) {
+          // Clean up the address to show most relevant parts
+          const addressParts = data.display_name.split(', ')
+          if (addressParts.length > 3) {
+            // Take the first 3-4 most specific parts
+            address = addressParts.slice(0, 4).join(', ')
+          } else {
+            address = data.display_name
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Reverse geocoding failed, using coordinates:', error)
+    }
     
     const location = { lat, lng, address }
     setSelectedLocation(location)

@@ -182,7 +182,7 @@ export default function ContactPage() {
             
             <CardHeader>
               <CardTitle className="text-2xl">{item.name}</CardTitle>
-              <CardDescription className="text-base">
+              <CardDescription className="text-base max-h-32 overflow-y-auto break-words">
                 {item.description}
               </CardDescription>
             </CardHeader>

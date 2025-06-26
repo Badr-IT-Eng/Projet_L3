@@ -57,7 +57,17 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [highlightItemId, setHighlightItemId] = useState<number | null>(null)
   
+  // Check for highlight parameter in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const highlightId = urlParams.get('highlight')
+    if (highlightId) {
+      setHighlightItemId(parseInt(highlightId))
+    }
+  }, [])
+
   // Fetch real data from the lost objects API
   useEffect(() => {
     const fetchLostObjects = async () => {
@@ -204,8 +214,16 @@ export default function MapPage() {
                 <div className="pt-2 border-t">
                   <div className="text-sm text-muted-foreground space-y-1">
                     <div className="flex justify-between">
-                      <span>Total Items:</span>
-                      <span className="font-medium">{objects.length}</span>
+                      <span>Lost Objects:</span>
+                      <span className="font-medium text-red-600">{objects.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Displayed:</span>
+                      <span className="font-medium text-blue-600">{filteredObjects.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Location:</span>
+                      <span className="font-medium text-green-600">Marseille</span>
                     </div>
                     {loading && (
                       <div className="flex items-center gap-2 text-blue-600">
@@ -235,7 +253,7 @@ export default function MapPage() {
             <div className="mt-4">
               <Card>
                 <CardHeader className="p-4">
-                  <CardTitle className="text-lg">Found Objects ({filteredObjects.length})</CardTitle>
+                  <CardTitle className="text-lg">Lost Objects in Area ({filteredObjects.length})</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 max-h-[400px] overflow-y-auto">
                   {loading ? (
@@ -344,7 +362,7 @@ export default function MapPage() {
                           </div>
                         </div>
                       ) : (
-                        <MapViewer objects={filteredObjects} />
+                        <MapViewer objects={filteredObjects} highlightItemId={highlightItemId} />
                       )}
                     </div>
                   </CardContent>

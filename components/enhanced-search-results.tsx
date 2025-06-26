@@ -15,6 +15,8 @@ interface SearchResult {
   image: string
   matchScore: number
   category: string
+  itemType?: string
+  status?: string
 }
 
 interface EnhancedSearchResultsProps {
@@ -165,14 +167,24 @@ export function EnhancedSearchResults({
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-xs">
-                        {result.category}
-                      </Badge>
+                      <div className="flex gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {result.category}
+                        </Badge>
+                        {result.itemType && (
+                          <Badge 
+                            variant={result.itemType === 'FOUND' ? 'default' : 'destructive'} 
+                            className="text-xs"
+                          >
+                            {result.itemType}
+                          </Badge>
+                        )}
+                      </div>
                       
                       <ContactModal itemId={result.id} itemName={result.name}>
                         <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                           <MessageCircle className="w-4 h-4 mr-2" />
-                          Contact Owner
+                          {result.itemType === 'FOUND' ? 'Contact Finder' : 'Contact Owner'}
                         </Button>
                       </ContactModal>
                     </div>

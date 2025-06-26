@@ -165,6 +165,9 @@ export function Navbar({ className }: { className?: string }) {
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" asChild>
+                    <Link href="/profile">Profile</Link>
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" asChild>
                     <Link href="/dashboard">Dashboard</Link>
                   </Button>
                   <Button variant="ghost" size="sm" className="h-10 px-4 hover:text-white dark:text-gray-300" onClick={() => signOut()}>

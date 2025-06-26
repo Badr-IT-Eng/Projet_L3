@@ -75,9 +75,10 @@ interface MapObject {
 
 export interface MapWithNoSSRProps {
   objects: MapObject[]
+  highlightItemId?: number | null
 }
 
-const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
+const MapWithNoSSR = ({ objects, highlightItemId }: MapWithNoSSRProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -238,7 +239,9 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
       });
 
       // Add markers with custom icons and clustering
+      let highlightedMarker: L.Marker | null = null;
       objects.forEach((obj) => {
+        const isHighlighted = highlightItemId && obj.id === highlightItemId;
         const customIcon = createCategoryIcon(obj.category);
         const marker = L.marker([obj.coordinates.lat, obj.coordinates.lng], {
           icon: customIcon
@@ -319,6 +322,11 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
         });
         
         markers.addLayer(marker);
+        
+        // Store highlighted marker for later use
+        if (isHighlighted) {
+          highlightedMarker = marker;
+        }
       });
       
       // Create heatmap data
@@ -353,6 +361,20 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
       // Store references for cleanup
       markersRef.current = markers;
       heatmapRef.current = heatmap;
+
+      // Handle highlighting if an item ID is provided
+      if (highlightedMarker && highlightItemId) {
+        // Center the map on the highlighted item
+        const highlightedObject = objects.find(obj => obj.id === highlightItemId);
+        if (highlightedObject) {
+          map.setView([highlightedObject.coordinates.lat, highlightedObject.coordinates.lng], 16);
+          
+          // Open the popup after a short delay to ensure map is ready
+          setTimeout(() => {
+            highlightedMarker?.openPopup();
+          }, 500);
+        }
+      }
 
       // Add event listeners for custom controls
       setTimeout(() => {
@@ -433,7 +455,7 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
         setIsMapInitialized(false);
       }
     };
-  }, [objects, mapId, currentLayer, userLocation, viewMode]);
+  }, [objects, mapId, currentLayer, userLocation, viewMode, highlightItemId]);
 
   // Function to switch tile layers
   const switchLayer = (layerType: string) => {
@@ -522,11 +544,41 @@ const MapWithNoSSR = ({ objects }: MapWithNoSSRProps) => {
         </div>
       </div>
       
-      {/* Object count indicator */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2">
-        <div className="flex items-center gap-2 text-sm">
-          <MapPin className="h-4 w-4 text-blue-600" />
-          <span className="font-medium">{objects.length} objects</span>
+      {/* Object count and location info */}
+      <div className="absolute bottom-4 left-4 z-[1000] space-y-2">
+        <div className="bg-white rounded-lg shadow-lg px-3 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-red-600" />
+            <span className="font-medium">{objects.length} lost objects</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg px-3 py-2">
+          <div className="text-xs text-gray-600">
+            📍 Marseille, France
+          </div>
+        </div>
+      </div>
+
+      {/* Category legend */}
+      <div className="absolute top-16 left-4 z-[1000] bg-white rounded-lg shadow-lg p-3 max-w-[200px]">
+        <div className="text-sm font-medium mb-2">Categories</div>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span>Electronics</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span>Bags</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+            <span>Accessories</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+            <span>Other</span>
+          </div>
         </div>
       </div>
       

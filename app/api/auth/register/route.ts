@@ -47,6 +47,25 @@ export async function POST(request: Request) {
 
     const { name, email, password, contactInformation } = validation.data;
 
+    // Check email verification status
+    const verificationResponse = await fetch(`${request.url.replace('/register', '/verify-email')}?email=${encodeURIComponent(email)}`, {
+      method: 'GET'
+    });
+    
+    if (verificationResponse.ok) {
+      const verificationData = await verificationResponse.json();
+      if (!verificationData.verified && verificationData.exists) {
+        return NextResponse.json(
+          { 
+            error: "Email not verified", 
+            message: "Please verify your email address before registering",
+            needsVerification: true 
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // In development, simulate database operations with mock data
     // Check if user already exists
     const existingUser = mockUsers.find(user => user.email === email);
