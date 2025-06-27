@@ -637,7 +637,6 @@ const RealTimeDetection = () => {
                       )}
                       <div className="flex-1">
                         <div className="font-medium flex items-center gap-2">
-                          {detection.object}
                           {detection.context === 'unattended' && (
                             <Badge variant="destructive" className="text-xs">
                               🚨 Non surveillé
@@ -645,15 +644,7 @@ const RealTimeDetection = () => {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(detection.timestamp).toLocaleTimeString()}
-                        </div>
-                      </div>
-                      <div className="text-right space-y-1">
-                        <Badge variant="outline">
-                          {Math.round(detection.confidence * 100)}%
-                        </Badge>
-                        <div className="text-xs text-muted-foreground">
-                          {detection.category}
+                          <span>{new Date(detection.timestamp).toLocaleTimeString()}</span>
                         </div>
                       </div>
                     </div>

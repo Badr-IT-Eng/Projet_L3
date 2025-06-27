@@ -679,9 +679,47 @@ public class DetectionService {
     
     private String generateItemName(ItemCategory category, String trackingId) {
         String categoryName = category.toString().toLowerCase().replace("_", " ");
-        String shortId = trackingId.length() > 10 ? trackingId.substring(0, 10) : trackingId;
-        return String.format("AI Detected %s (%s)", 
-            categoryName.substring(0, 1).toUpperCase() + categoryName.substring(1), 
-            shortId);
+        
+        // Generate a more user-friendly name based on category
+        String objectType;
+        switch (category) {
+            case BAGS:
+                objectType = "Sac ou valise";
+                break;
+            case ELECTRONICS:
+                objectType = "Appareil électronique";
+                break;
+            case CLOTHING:
+                objectType = "Vêtement";
+                break;
+            case ACCESSORIES:
+                objectType = "Accessoire";
+                break;
+            case JEWELRY:
+                objectType = "Bijou";
+                break;
+            case DOCUMENTS:
+                objectType = "Document";
+                break;
+            case KEYS:
+                objectType = "Clés";
+                break;
+            case BOOKS:
+                objectType = "Livre";
+                break;
+            case TOYS:
+                objectType = "Jouet";
+                break;
+            default:
+                objectType = "Objet";
+                break;
+        }
+        
+        // Use a timestamp-based ID instead of tracking ID for better readability
+        String timestamp = java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm")
+        );
+        
+        return String.format("%s détecté automatiquement (%s)", objectType, timestamp);
     }
 } 

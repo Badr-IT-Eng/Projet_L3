@@ -135,6 +135,10 @@ class StrictSuitcaseDetector:
         elif any(cat in class_name for cat in ['person', 'people', 'human', 'face', 'body']):
             return 'EXCLUDED'  # Exclude people from lost items
         
+        # Animals (should NOT be classified as lost items - often confused with bags)
+        elif any(cat in class_name for cat in ['cat', 'dog', 'bird', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe']):
+            return 'EXCLUDED'  # Exclude animals - YOLO often confuses cats with bags
+        
         # Transportation (should NOT be classified as lost items)
         elif any(cat in class_name for cat in ['train', 'car', 'truck', 'bus', 'motorcycle', 'bicycle']):
             return 'EXCLUDED'  # Exclude vehicles
@@ -155,9 +159,9 @@ class StrictSuitcaseDetector:
         elif any(cat in class_name for cat in ['chair', 'bench', 'remote', 'mouse', 'keyboard']):
             return 'MISCELLANEOUS'
         
-        # Default to BAGS for anything else - this makes it more likely to detect objects
+        # Default to EXCLUDED for anything else - be conservative about unknown objects
         else:
-            return 'BAGS'
+            return 'EXCLUDED'
     
     def detect_main_suitcase(self, video_path: str) -> Dict:
         """
