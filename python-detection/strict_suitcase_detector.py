@@ -131,13 +131,17 @@ class StrictSuitcaseDetector:
         elif any(cat in class_name for cat in ['shirt', 'pants', 'dress', 'skirt', 'tie', 'belt', 'sock']):
             return 'CLOTHING'
         
-        # Transportation (YOLO sometimes confuses these with bags)
-        elif any(cat in class_name for cat in ['train', 'car', 'truck', 'bus', 'motorcycle', 'bicycle']):
-            return 'BAGS'  # Map transportation to BAGS since they're often confused
+        # People (should NOT be classified as lost items)
+        elif any(cat in class_name for cat in ['person', 'people', 'human', 'face', 'body']):
+            return 'EXCLUDED'  # Exclude people from lost items
         
-        # Common misclassifications that might actually be bags/lost items
-        elif any(cat in class_name for cat in ['sports ball', 'traffic light']):
-            return 'BAGS'  # These are often misclassified bags or suitcases
+        # Transportation (should NOT be classified as lost items)
+        elif any(cat in class_name for cat in ['train', 'car', 'truck', 'bus', 'motorcycle', 'bicycle']):
+            return 'EXCLUDED'  # Exclude vehicles
+        
+        # Furniture/Environment (should NOT be classified as lost items)
+        elif any(cat in class_name for cat in ['toilet', 'sink', 'chair', 'table', 'bed', 'sofa', 'couch', 'bench', 'refrigerator']):
+            return 'EXCLUDED'  # Exclude furniture
         
         # Common lost items
         elif any(cat in class_name for cat in ['book', 'bottle', 'cup', 'umbrella', 'pen', 'pencil', 'notebook']):

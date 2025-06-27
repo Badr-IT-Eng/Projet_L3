@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  frontend:
+    environment:
+      - NODE_ENV=production
+      - NEXTAUTH_URL=https://recovr.pro
+      - NEXT_PUBLIC_BACKEND_URL=https://recovr.pro/api
+      - NEXT_PUBLIC_DETECTION_API_URL=https://recovr.pro/ai
+    restart: always
+    
+  backend:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_SERVLET_CONTEXT_PATH=/api
+    restart: always
+    
+  ai-detection:
+    restart: always
+    
+  mysql:
+    restart: always
+    
+  # Nginx Reverse Proxy for recovr.pro
+  nginx:
+    image: nginx:alpine
+    container_name: recovr-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - recovr-network

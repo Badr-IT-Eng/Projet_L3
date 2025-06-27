@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { extractImageFeatures } from '@/lib/ai/feature-extraction'
 
 const DETECTION_API_URL = process.env.DETECTION_API_URL || process.env.NEXT_PUBLIC_DETECTION_API_URL || 'http://localhost:5002'
-const PYTHON_DETECTION_URL = process.env.PYTHON_DETECTION_URL || 'http://localhost:5000'
+const PYTHON_DETECTION_URL = process.env.PYTHON_DETECTION_URL || 'http://localhost:5002'
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
     const pythonDetection = results[1].status === 'fulfilled' ? results[1].value : null
     const localFeatures = results[2].status === 'fulfilled' ? results[2].value : []
     
+    console.log('🔧 Unified Detection Result:', unifiedDetection)
+    console.log('🐍 Python Detection Result:', pythonDetection)
+    console.log('🎯 Results Status:', results.map(r => r.status))
+    
     // Combine detection results
     const combinedDetections = combineDetectionResults(unifiedDetection, pythonDetection)
     
@@ -109,7 +113,7 @@ async function tryUnifiedDetectionAPI(image: File): Promise<any> {
     const detectionFormData = new FormData()
     detectionFormData.append('image', image)
 
-    const response = await fetch(`${DETECTION_API_URL}/detect/image`, {
+    const response = await fetch(`${DETECTION_API_URL}/detect`, {
       method: 'POST',
       body: detectionFormData,
       signal: AbortSignal.timeout(30000)
@@ -122,7 +126,7 @@ async function tryUnifiedDetectionAPI(image: File): Promise<any> {
     }
     return null
   } catch (error) {
-    console.warn('Unified detection API unavailable:', error.message)
+    console.warn('Unified detection API unavailable:', error instanceof Error ? error.message : 'Unknown error')
     return null
   }
 }
@@ -149,7 +153,7 @@ async function tryPythonDetectionAPI(imageBuffer: Buffer, mimeType: string): Pro
     }
     return null
   } catch (error) {
-    console.warn('Python detection API unavailable:', error.message)
+    console.warn('Python detection API unavailable:', error instanceof Error ? error.message : 'Unknown error')
     return null
   }
 }

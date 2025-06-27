@@ -26,6 +26,7 @@ interface DetectionResult {
   category: string
   bbox?: number[]
   timestamp: string
+  screenshot?: string
 }
 
 interface CameraStats {
@@ -44,6 +45,7 @@ const RealTimeDetection = () => {
   const [isActive, setIsActive] = useState(false)
   const [isDetecting, setIsDetecting] = useState(false)
   const [detections, setDetections] = useState<DetectionResult[]>([])
+  const [detectedObjects, setDetectedObjects] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<CameraStats>({
     fps: 0,
@@ -52,7 +54,7 @@ const RealTimeDetection = () => {
     avgConfidence: 0
   })
   const [detectionInterval, setDetectionInterval] = useState(2000) // 2 seconds
-  const [confidenceThreshold, setConfidenceThreshold] = useState(0.5)
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.3)
 
   // Start camera stream
   const startCamera = useCallback(async () => {
@@ -142,6 +144,9 @@ const RealTimeDetection = () => {
 
     // Draw current video frame to canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    
+    // Capture screenshot as base64
+    const screenshot = canvas.toDataURL('image/jpeg', 0.8)
 
     try {
       // Convert canvas to blob
@@ -159,11 +164,10 @@ const RealTimeDetection = () => {
 
       console.log('🔍 Sending frame for detection...')
 
-      // Try multiple detection endpoints
+      // Try Python detection API directly
       const endpoints = [
-        '/api/detection/features', // Our enhanced endpoint
-        'http://localhost:5000/detect', // Python detection service
-        'http://localhost:5002/detect/image' // Alternative detection API
+        'http://localhost:5002/detect', // Direct Python API
+        '/api/detection/features' // Fallback to Next.js API
       ]
 
       let detectionResult = null
@@ -187,31 +191,123 @@ const RealTimeDetection = () => {
       }
 
       if (detectionResult) {
+        console.log('🔍 Detection result received:', detectionResult)
+        
         // Process detection results
         const newDetections: DetectionResult[] = []
         
         // Handle different response formats
         const objects = detectionResult.detections || 
                         detectionResult.objects || 
-                        (detectionResult.results ? [detectionResult.results] : [])
+                        []
 
+        console.log('📋 Objects found:', objects)
+        
         objects.forEach((obj: any, index: number) => {
           const confidence = obj.confidence || obj.score || 0
+          const objectName = obj.class || obj.label || obj.name || obj.object || 'Unknown Object'
           
-          if (confidence >= confidenceThreshold) {
-            newDetections.push({
-              id: `${Date.now()}-${index}`,
-              object: obj.class || obj.label || obj.name || 'Unknown Object',
-              confidence: confidence,
-              category: obj.category || categorizeObject(obj.class || obj.label || ''),
-              bbox: obj.bbox || obj.bounding_box,
-              timestamp: new Date().toISOString()
-            })
+          console.log(`🎯 Processing object: ${objectName}, confidence: ${confidence}, threshold: ${confidenceThreshold}`)
+          
+          // Enhanced confidence thresholds by category - higher for better precision
+          const categoryThresholds = {
+            'BAGS': 0.5,
+            'ELECTRONICS': 0.6, 
+            'CLOTHING': 0.6,
+            'PERSONAL': 0.7,
+            'MISCELLANEOUS': 0.7
+          }
+          
+          const category = obj.category || categorizeObject(objectName)
+          const minConfidence = categoryThresholds[category] || confidenceThreshold
+          
+          if (confidence >= minConfidence) {
+            console.log(`✅ Object ${objectName} (${category}) passed confidence threshold: ${confidence.toFixed(3)} >= ${minConfidence}`)
+            
+            // Create unique key combining object name and category  
+            const objectKey = `${objectName.toLowerCase()}_${category}`
+            
+            // Check if we already have this object type with higher confidence
+            const existingDetection = detections.find(d => 
+              d.object.toLowerCase() === objectName.toLowerCase() && 
+              d.category === category
+            )
+            
+            // Only add if:
+            // 1. Object not detected before, OR
+            // 2. New detection has significantly higher confidence (+10%)
+            const shouldAdd = !existingDetection || 
+              (confidence > existingDetection.confidence + 0.1)
+            
+            if (shouldAdd && !detectedObjects.has(objectKey)) {
+              console.log(`🆕 Adding new object: ${objectName} (${category}) - ${(confidence*100).toFixed(1)}%`)
+              
+              // If updating existing detection, remove the old one
+              if (existingDetection) {
+                setDetections(prev => prev.filter(d => d.id !== existingDetection.id))
+                console.log(`🔄 Updating ${objectName} with higher confidence`)
+              }
+              
+              newDetections.push({
+                id: `${Date.now()}-${index}`,
+                object: objectName,
+                confidence: confidence,
+                category: category,
+                bbox: obj.bbox || obj.bounding_box,
+                timestamp: new Date().toISOString(),
+                screenshot: screenshot
+              })
+              
+              // Mark this object as detected for 30 seconds (longer period)
+              setDetectedObjects(prev => new Set([...prev, objectKey]))
+              
+              // Auto-remove from detected set after 30 seconds
+              setTimeout(() => {
+                setDetectedObjects(prev => {
+                  const newSet = new Set(prev)
+                  newSet.delete(objectKey)
+                  return newSet
+                })
+              }, 30000)
+            } else {
+              console.log(`⏭️ Object ${objectName} (${category}) already detected with sufficient confidence`)
+            }
+          } else {
+            console.log(`❌ Object ${objectName} failed confidence threshold (${confidence} < ${confidenceThreshold})`)
           }
         })
 
+        // DISABLE TEST DETECTION - Use real YOLO detection only
+        // Real YOLO detection should work now
+
+        console.log(`📊 Final newDetections count: ${newDetections.length}`)
+
         if (newDetections.length > 0) {
-          setDetections(prev => [...newDetections, ...prev].slice(0, 50)) // Keep last 50 detections
+          console.log(`📝 Adding ${newDetections.length} detections to UI`)
+          
+          setDetections(prev => {
+            const updated = [...newDetections, ...prev]
+            
+            // Group by object type and keep only the best detection for each
+            const bestDetections = new Map()
+            
+            updated.forEach(detection => {
+              const key = `${detection.object.toLowerCase()}_${detection.category}`
+              const existing = bestDetections.get(key)
+              
+              if (!existing || detection.confidence > existing.confidence) {
+                bestDetections.set(key, detection)
+              }
+            })
+            
+            // Convert back to array and sort by confidence, keep top 5
+            const uniqueDetections = Array.from(bestDetections.values())
+              .sort((a, b) => b.confidence - a.confidence)
+              .slice(0, 5) // Only show top 5 unique objects
+            
+            console.log(`🔄 Filtered to ${uniqueDetections.length} unique objects`)
+            return uniqueDetections
+          })
           
           // Update stats
           setStats(prev => ({
@@ -278,6 +374,7 @@ const RealTimeDetection = () => {
   // Clear detections
   const clearDetections = () => {
     setDetections([])
+    setDetectedObjects(new Set())
     setStats(prev => ({ ...prev, detectionCount: 0, avgConfidence: 0 }))
   }
 
@@ -500,7 +597,7 @@ const RealTimeDetection = () => {
                       <Button size="sm" variant="outline" onClick={downloadResults}>
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={clearDetections}>
+                      <Button size="sm" variant="outline" onClick={clearDetections} title="Reset detections">
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                     </>
@@ -520,8 +617,17 @@ const RealTimeDetection = () => {
                   detections.slice(0, 10).map((detection) => (
                     <div
                       key={detection.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      className="flex items-center gap-3 p-3 border rounded-lg"
                     >
+                      {detection.screenshot && (
+                        <div className="flex-shrink-0">
+                          <img 
+                            src={detection.screenshot} 
+                            alt={detection.object}
+                            className="w-16 h-12 object-cover rounded border"
+                          />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="font-medium">{detection.object}</div>
                         <div className="text-sm text-muted-foreground">

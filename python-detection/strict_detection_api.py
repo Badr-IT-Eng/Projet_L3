@@ -162,6 +162,127 @@ def detect_strict():
             'method': 'strict_suitcase_detection'
         }), 500
 
+@app.route('/detect/image', methods=['POST'])
+def detect_image():
+    """
+    Image detection endpoint for real-time camera frames
+    """
+    try:
+        logger.info("🖼️ Received image detection request")
+        
+        # Check if image file was uploaded
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image file provided'}), 400
+        
+        image_file = request.files['image']
+        if image_file.filename == '':
+            return jsonify({'error': 'No image file selected'}), 400
+        
+        # Validate file type
+        allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
+        file_extension = os.path.splitext(image_file.filename.lower())[1]
+        
+        if file_extension not in allowed_extensions:
+            return jsonify({'error': f'Unsupported image format: {file_extension}. Supported formats: {", ".join(allowed_extensions)}'}), 400
+        
+        # Check if detector is available
+        if not detector:
+            return jsonify({'error': 'Detection model not available'}), 500
+        
+        # Read image data
+        image_data = image_file.read()
+        
+        # Convert to OpenCV format
+        nparr = np.frombuffer(image_data, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            return jsonify({'error': 'Invalid image data'}), 400
+        
+        logger.info(f"📷 Processing image: {image_file.filename} ({image.shape})")
+        
+        # Run detection on single frame
+        detections = detector.model(image, conf=detector.confidence_threshold, verbose=False)
+        
+        # Process detections
+        objects_detected = []
+        if len(detections) > 0 and len(detections[0].boxes) > 0:
+            for box in detections[0].boxes:
+                conf = float(box.conf[0])
+                class_id = int(box.cls[0])
+                class_name = detector.model.names[class_id]
+                
+                # Apply category mapping
+                category = detector._map_category(class_name)
+                
+                # Enhanced filtering: exclude people, furniture, vehicles and apply confidence thresholds
+                min_confidence = {
+                    'BAGS': 0.5,           # Higher threshold for bags - better precision
+                    'ELECTRONICS': 0.6,    # Higher threshold for electronics
+                    'CLOTHING': 0.6,       # Higher threshold for clothing  
+                    'PERSONAL': 0.7,       # Higher threshold for personal items
+                    'MISCELLANEOUS': 0.7   # Higher threshold for misc items
+                }
+                
+                if (category != 'EXCLUDED' and 
+                    category in min_confidence and 
+                    conf >= min_confidence[category]):
+                    
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    
+                    objects_detected.append({
+                        'category': category,
+                        'class': class_name,
+                        'confidence': conf,
+                        'bbox': [int(x1), int(y1), int(x2), int(y2)],
+                        'source': 'yolo_realtime'
+                    })
+        
+        logger.info(f"🎯 Detected {len(objects_detected)} objects")
+        
+        # Return detection results
+        return jsonify({
+            'success': True,
+            'method': 'realtime_image_detection',
+            'objects': objects_detected,
+            'total_objects': len(objects_detected),
+            'categories': list(set(obj['category'] for obj in objects_detected)),
+            'processing_info': {
+                'filename': image_file.filename,
+                'detection_method': 'YOLO Real-time Detection',
+                'image_size': f"{image.shape[1]}x{image.shape[0]}"
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Image detection failed: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Detection failed: {str(e)}',
+            'method': 'realtime_image_detection'
+        }), 500
+
+@app.route('/detect', methods=['POST'])
+def detect_generic():
+    """
+    Generic detection endpoint that handles both images and videos
+    """
+    try:
+        # Check for image first
+        if 'image' in request.files:
+            return detect_image()
+        elif 'video' in request.files:
+            return detect_strict()
+        else:
+            return jsonify({'error': 'No image or video file provided'}), 400
+    except Exception as e:
+        logger.error(f"❌ Generic detection failed: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Detection failed: {str(e)}',
+            'method': 'generic_detection'
+        }), 500
+
 @app.route('/detect/info', methods=['GET'])
 def detection_info():
     """Get information about the strict detection service"""
@@ -173,12 +294,18 @@ def detection_info():
             'component_filtering': 'Ignores handles, zippers, small parts',
             'context_cropping': 'Maximum context padding (200%) for clear visibility',
             'category_mapping': 'Maps train/luggage/bag detections to BAGS category',
-            'strict_validation': 'Multiple size, position, and ratio checks'
+            'strict_validation': 'Multiple size, position, and ratio checks',
+            'realtime_detection': 'Real-time camera frame detection'
         },
-        'supported_formats': ['mp4', 'avi', 'mov'],
+        'supported_formats': {
+            'video': ['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv'],
+            'image': ['jpg', 'jpeg', 'png', 'webp', 'bmp']
+        },
         'endpoints': {
             '/health': 'Health check',
             '/detect/strict': 'Strict suitcase detection (POST with video file)',
+            '/detect/image': 'Real-time image detection (POST with image file)',
+            '/detect': 'Generic detection (POST with image or video file)',
             '/detect/info': 'Service information'
         }
     })

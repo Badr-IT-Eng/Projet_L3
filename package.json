@@ -48,6 +48,7 @@
     "critters": "^0.0.23",
     "date-fns": "latest",
     "embla-carousel-react": "8.5.1",
+    "eslint-config-next": "^15.3.4",
     "framer-motion": "^12.18.1",
     "input-otp": "1.4.1",
     "leaflet": "^1.9.4",

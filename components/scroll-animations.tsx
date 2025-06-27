@@ -122,7 +122,7 @@ export function ParallaxSection({
 }
 
 // Smooth scrolling utility
-export function enableSmoothScroll() {
+export function EnableSmoothScroll() {
   useEffect(() => {
     // Add smooth scrolling to all links
     const handleLinkClick = (e: MouseEvent) => {

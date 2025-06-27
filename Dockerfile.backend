@@ -1,0 +1,48 @@
+# Backend Dockerfile for Spring Boot application
+FROM eclipse-temurin:17-jdk AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy Maven wrapper and pom
+COPY mvnw* ./
+COPY .mvn .mvn
+COPY pom.xml ./
+
+# Download dependencies (for better caching)
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN ./mvnw clean package -DskipTests
+
+# Production stage
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup --system spring && adduser --system --ingroup spring spring
+
+# Create uploads directory
+RUN mkdir -p uploads && chown spring:spring uploads
+
+# Copy the JAR file
+COPY --from=builder /app/target/*.jar app.jar
+
+# Set ownership
+RUN chown spring:spring app.jar
+
+USER spring
+
+# Expose port
+EXPOSE 8082
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8082/actuator/health || exit 1
+
+# Start the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

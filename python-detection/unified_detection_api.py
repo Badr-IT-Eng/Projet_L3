@@ -105,8 +105,17 @@ class UnifiedDetector:
         try:
             start_time = time.time()
             
-            # Run inference
-            results = self.model(image_path, conf=self.config.confidence_threshold)
+            # Temporarily disable PyTorch weights_only for YOLO inference
+            import torch
+            original_load = torch.load
+            torch.load = lambda *args, **kwargs: original_load(*args, **kwargs, weights_only=False)
+            
+            try:
+                # Run inference
+                results = self.model(image_path, conf=self.config.confidence_threshold)
+            finally:
+                # Restore original torch.load
+                torch.load = original_load
             
             detections = []
             for result in results:
