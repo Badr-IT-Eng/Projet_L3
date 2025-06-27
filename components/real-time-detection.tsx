@@ -255,7 +255,8 @@ const RealTimeDetection = () => {
                 category: category,
                 bbox: obj.bbox || obj.bounding_box,
                 timestamp: new Date().toISOString(),
-                screenshot: screenshot
+                screenshot: screenshot,
+                context: obj.context || 'unattended' // Context information
               })
               
               // Mark this object as detected for 30 seconds (longer period)
@@ -580,6 +581,12 @@ const RealTimeDetection = () => {
                 <span className="text-sm">Active Detections:</span>
                 <span className="font-medium">{detections.length}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Objets Non Surveillés:</span>
+                <span className="font-medium text-red-600">
+                  {detections.filter(d => d.context === 'unattended').length}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
@@ -629,7 +636,14 @@ const RealTimeDetection = () => {
                         </div>
                       )}
                       <div className="flex-1">
-                        <div className="font-medium">{detection.object}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {detection.object}
+                          {detection.context === 'unattended' && (
+                            <Badge variant="destructive" className="text-xs">
+                              🚨 Non surveillé
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {new Date(detection.timestamp).toLocaleTimeString()}
                         </div>

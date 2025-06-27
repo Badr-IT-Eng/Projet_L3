@@ -205,38 +205,73 @@ def detect_image():
         detections = detector.model(image, conf=detector.confidence_threshold, verbose=False)
         
         # Process detections
-        objects_detected = []
+        all_detections = []
+        people_detections = []
+        
         if len(detections) > 0 and len(detections[0].boxes) > 0:
             for box in detections[0].boxes:
                 conf = float(box.conf[0])
                 class_id = int(box.cls[0])
                 class_name = detector.model.names[class_id]
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
                 
-                # Apply category mapping
-                category = detector._map_category(class_name)
-                
-                # Enhanced filtering: exclude people, furniture, vehicles and apply confidence thresholds
-                min_confidence = {
-                    'BAGS': 0.5,           # Higher threshold for bags - better precision
-                    'ELECTRONICS': 0.6,    # Higher threshold for electronics
-                    'CLOTHING': 0.6,       # Higher threshold for clothing  
-                    'PERSONAL': 0.7,       # Higher threshold for personal items
-                    'MISCELLANEOUS': 0.7   # Higher threshold for misc items
+                detection_obj = {
+                    'class': class_name,
+                    'confidence': conf,
+                    'bbox': [int(x1), int(y1), int(x2), int(y2)]
                 }
                 
-                if (category != 'EXCLUDED' and 
-                    category in min_confidence and 
-                    conf >= min_confidence[category]):
-                    
-                    x1, y1, x2, y2 = box.xyxy[0].tolist()
-                    
+                # Separate people from objects
+                if class_name.lower() == 'person':
+                    people_detections.append(detection_obj)
+                else:
+                    all_detections.append(detection_obj)
+        
+        # Filter objects that are NOT near people (lost objects logic)
+        objects_detected = []
+        
+        for obj_detection in all_detections:
+            class_name = obj_detection['class']
+            conf = obj_detection['confidence']
+            bbox = obj_detection['bbox']
+            
+            # Apply category mapping
+            category = detector._map_category(class_name)
+            
+            # Enhanced filtering: exclude people, furniture, vehicles and apply confidence thresholds
+            min_confidence = {
+                'BAGS': 0.5,           # Higher threshold for bags - better precision
+                'ELECTRONICS': 0.6,    # Higher threshold for electronics
+                'CLOTHING': 0.6,       # Higher threshold for clothing  
+                'PERSONAL': 0.7,       # Higher threshold for personal items
+                'MISCELLANEOUS': 0.7   # Higher threshold for misc items
+            }
+            
+            # Check if object meets confidence and category requirements
+            if (category != 'EXCLUDED' and 
+                category in min_confidence and 
+                conf >= min_confidence[category]):
+                
+                # Check if object is near a person (not lost if near person)
+                is_near_person = _is_object_near_person(bbox, people_detections, image.shape[:2])
+                
+                if not is_near_person:  # Only add if NOT near a person (truly lost)
+                    logger.info(f"✅ Object {class_name} is ALONE - marking as potentially lost")
                     objects_detected.append({
                         'category': category,
                         'class': class_name,
                         'confidence': conf,
-                        'bbox': [int(x1), int(y1), int(x2), int(y2)],
-                        'source': 'yolo_realtime'
+                        'bbox': bbox,
+                        'source': 'yolo_realtime',
+                        'context': 'unattended'  # Object is unattended
                     })
+                else:
+                    logger.info(f"⚠️ Object {class_name} is near person - NOT marking as lost")
+            else:
+                if category == 'EXCLUDED':
+                    logger.debug(f"🚫 Excluded {class_name} from detection")
+                else:
+                    logger.debug(f"❌ {class_name} failed confidence threshold ({conf:.3f} < {min_confidence.get(category, 0.5)})")
         
         logger.info(f"🎯 Detected {len(objects_detected)} objects")
         
@@ -249,8 +284,12 @@ def detect_image():
             'categories': list(set(obj['category'] for obj in objects_detected)),
             'processing_info': {
                 'filename': image_file.filename,
-                'detection_method': 'YOLO Real-time Detection',
-                'image_size': f"{image.shape[1]}x{image.shape[0]}"
+                'detection_method': 'YOLO Real-time Detection + Proximity Analysis',
+                'image_size': f"{image.shape[1]}x{image.shape[0]}",
+                'people_detected': len(people_detections),
+                'total_objects_found': len(all_detections),
+                'objects_near_people': len(all_detections) - len(objects_detected),
+                'unattended_objects': len(objects_detected)
             }
         })
         
@@ -261,6 +300,60 @@ def detect_image():
             'error': f'Detection failed: {str(e)}',
             'method': 'realtime_image_detection'
         }), 500
+
+def _is_object_near_person(object_bbox, people_detections, image_size):
+    """
+    Check if an object is near a person (within proximity threshold)
+    
+    Args:
+        object_bbox: [x1, y1, x2, y2] bounding box of the object
+        people_detections: List of person detection objects with bbox
+        image_size: (height, width) of the image
+    
+    Returns:
+        bool: True if object is near a person, False if object is alone/lost
+    """
+    if not people_detections:
+        return False  # No people detected, object is alone
+    
+    obj_x1, obj_y1, obj_x2, obj_y2 = object_bbox
+    obj_center_x = (obj_x1 + obj_x2) / 2
+    obj_center_y = (obj_y1 + obj_y2) / 2
+    obj_width = obj_x2 - obj_x1
+    obj_height = obj_y2 - obj_y1
+    
+    # Dynamic proximity threshold based on image size and object size
+    img_height, img_width = image_size
+    base_threshold = min(img_width, img_height) * 0.2  # 20% of image dimension
+    object_size_factor = max(obj_width, obj_height) * 2  # 2x object size
+    proximity_threshold = max(base_threshold, object_size_factor)
+    
+    logger.debug(f"🔍 Checking proximity: object at ({obj_center_x:.0f}, {obj_center_y:.0f}), threshold: {proximity_threshold:.0f}px")
+    
+    for person in people_detections:
+        person_bbox = person['bbox']
+        person_conf = person['confidence']
+        
+        # Only consider high-confidence person detections
+        if person_conf < 0.5:
+            continue
+            
+        p_x1, p_y1, p_x2, p_y2 = person_bbox
+        person_center_x = (p_x1 + p_x2) / 2
+        person_center_y = (p_y1 + p_y2) / 2
+        
+        # Calculate distance between object and person centers
+        distance = ((obj_center_x - person_center_x) ** 2 + (obj_center_y - person_center_y) ** 2) ** 0.5
+        
+        logger.debug(f"👤 Person at ({person_center_x:.0f}, {person_center_y:.0f}), distance: {distance:.0f}px")
+        
+        # Check if object is within proximity of this person
+        if distance <= proximity_threshold:
+            logger.info(f"🤝 Object is within {distance:.0f}px of person (threshold: {proximity_threshold:.0f}px) - ATTENDED")
+            return True
+    
+    logger.info(f"🏃 Object is alone - no person within {proximity_threshold:.0f}px - UNATTENDED")
+    return False
 
 @app.route('/detect', methods=['POST'])
 def detect_generic():
